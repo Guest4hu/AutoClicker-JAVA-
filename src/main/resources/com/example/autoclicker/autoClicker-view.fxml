@@ -4,7 +4,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<StackPane prefHeight="720.0" prefWidth="800.0" style="-fx-background-color: linear-gradient(to bottom, #0f172a, #111827);" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.autoclicker.Controller.AutoClickerController">
+<StackPane prefHeight="720.0" prefWidth="800.0" style="-fx-background-color: linear-gradient(to bottom, #0f172a, #111827);" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.autoclicker.controller.AutoClickerController">
     <VBox alignment="CENTER" maxWidth="560.0" prefWidth="560.0" spacing="12.0">
         <padding>
             <Insets bottom="24.0" left="24.0" right="24.0" top="24.0" />

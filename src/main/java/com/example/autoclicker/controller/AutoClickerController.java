@@ -1,7 +1,9 @@
-package com.example.autoclicker.Controller;
+package com.example.autoclicker.controller;
 
 import com.example.autoclicker.domain.AutoClickerEngine;
 import com.example.autoclicker.domain.AutoClickerSetting;
+import com.example.autoclicker.service.HotkeyService;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.Scene;
@@ -15,10 +17,15 @@ import javafx.scene.input.KeyCode;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 
 public class AutoClickerController {
-	private Set<KeyCode> teclasPressionadas = new LinkedHashSet<>();
+
+
+
+	private final HotkeyService hotkeyService;
+
 	private boolean applicationInitialize = true;
 	private static Set<KeyCode> configuredHotKey = new LinkedHashSet<>();
 	private Set<KeyCode> currentPressedKeys = new LinkedHashSet<>();
@@ -54,6 +61,10 @@ public class AutoClickerController {
 	@FXML
 	private TextArea statusArea;
 
+    public AutoClickerController(HotkeyService hotkeyService) {
+        this.hotkeyService = hotkeyService;
+    }
+
 //	@FXML
 //	private ListView<String> pointsList;
 //
@@ -87,34 +98,8 @@ public class AutoClickerController {
 	}
 
 	public void ativacaoTeclaDeAtalho() {
-		Scene scene = hotKeyButton.getScene();
-		if (scene == null) {
-			return;
-		}
-
-		globalHotkeyListener = new com.example.autoclicker.service.GlobalHotkeyListener();
-		globalHotkeyListener.start(configuredHotKey, () -> {
-			if (!capturandoHotkey && !configuredHotKey.isEmpty()) {
-				javafx.application.Platform.runLater(this::buttonStopAndStart);
-			}
-		});
-
-		// Listener local (quando a janela está em foco)
-		scene.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, e -> {
-			if (capturandoHotkey || configuredHotKey.isEmpty()) return;
-			currentPressedKeys.add(e.getCode());
-
-			if (!hotkeyJaDisparou && currentPressedKeys.containsAll(configuredHotKey)) {
-				hotkeyJaDisparou = true;
-				buttonStopAndStart();
-			}
-		});
-
-		scene.addEventFilter(javafx.scene.input.KeyEvent.KEY_RELEASED, e -> {
-			currentPressedKeys.remove(e.getCode());
-			if (!currentPressedKeys.containsAll(configuredHotKey)) {
-				hotkeyJaDisparou = false;
-			}
+		hotkeyService.start(() -> {
+			Platform.runLater(this::buttonStopAndStart);
 		});
 	}
 
@@ -200,70 +185,15 @@ public class AutoClickerController {
 	}
 
 	public void captureHotKey() {
-		//Limpar as teclas de atalho antiga
-		teclasPressionadas.clear();
-		Scene scene = hotKeyButton.getScene();
-		scene.getRoot().requestFocus();
-		capturandoHotkey = true;
+		hotkeyService.captureHotkey(() -> {
+			// Como estamos voltando da thread do JNativeHook para a tela:
+			Platform.runLater(() -> {
+				// 1. Atualizamos o texto do botão com o atalho formatado
+				hotKeyButton.setText("Atalho: " + hotkeyService.getHotkeyText());
 
-		final KeyCode[] primaryKey = new KeyCode[1];// Salvando a primeira tecla pressionada, para comparar na liberação
-		final javafx.event.EventHandler<javafx.scene.input.KeyEvent>[] pressHandler = new javafx.event.EventHandler[1];
-		final javafx.event.EventHandler<javafx.scene.input.KeyEvent>[] releaseHandler = new javafx.event.EventHandler[1];
-
-		pressHandler[0] = event -> {
-			if (event.getCode() == KeyCode.ESCAPE) {
-				statusArea.setText("Captura cancelada.");
-				hotKeyButton.setText("Selecionar Tecla de Atalho");
-				stopHotKeyCapture(scene, pressHandler[0], releaseHandler[0]);
-				return;
-			}
-
-			if(event.getCode() == KeyCode.UNDEFINED) {
-				statusArea.setText("Tecla não reconhecida. Por favor, tente novamente.");
-				return;
-			}
-			teclasPressionadas.add(event.getCode());
-			statusArea.setText("Atalho no momento: " + teclasPressionadas);
-			if (primaryKey[0] == null) {
-				primaryKey[0] = event.getCode();
-			}
-		};
-
-		//Caso a primeira tecla pressionada seja soltada este e o momento que ira salvar a combinação de teclas, caso contrário, apenas remove a tecla solta da combinação
-		releaseHandler[0] = event -> {
-			if (event.getCode() == primaryKey[0]) {
-				hotKeyButton.setText("Hotkey: " + teclasPressionadas);
-				statusArea.setText("Atalho salvo: " + teclasPressionadas);
-				configuredHotKey.clear();
-				configuredHotKey.addAll(teclasPressionadas);
-				
-				// Re-registrar listener global com nova hotkey
-				if (globalHotkeyListener != null) {
-					globalHotkeyListener.stop();
-					globalHotkeyListener.start(configuredHotKey, () -> {
-						if (!capturandoHotkey && !configuredHotKey.isEmpty()) {
-							javafx.application.Platform.runLater(this::buttonStopAndStart);
-						}
-					});
-				}
-
-				stopHotKeyCapture(scene, pressHandler[0], releaseHandler[0]);
-			} else {
-				teclasPressionadas.remove(event.getCode());
-			}
-		};
-
-		scene.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, pressHandler[0]);
-		scene.addEventFilter(javafx.scene.input.KeyEvent.KEY_RELEASED, releaseHandler[0]);
+				// 2. Destravamos o botão para poder ser clicado novamente
+				hotKeyButton.setDisable(false);
+			});
+		});
 	}
-
-	private void stopHotKeyCapture(Scene scene, javafx.event.EventHandler<javafx.scene.input.KeyEvent> pressHandler, javafx.event.EventHandler<javafx.scene.input.KeyEvent> releaseHandler) {
-		scene.removeEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, pressHandler);
-		scene.removeEventFilter(javafx.scene.input.KeyEvent.KEY_RELEASED, releaseHandler);
-		hotKeyButton.setDisable(false);
-		capturandoHotkey = false;
-	}
-
-
-
 }

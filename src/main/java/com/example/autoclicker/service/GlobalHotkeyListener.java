@@ -1,10 +1,12 @@
 package com.example.autoclicker.service;
 
+import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
+import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
 import javafx.scene.input.KeyCode;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-public class GlobalHotkeyListener {
+public class GlobalHotkeyListener implements NativeKeyListener {
     private Runnable callback;
     private volatile boolean running = false;
     private Set<KeyCode> hotkeyCombo;
@@ -19,6 +21,7 @@ public class GlobalHotkeyListener {
         this.running = true;
     }
 
+
     public void stop() {
         this.running = false;
         this.currentPressedKeys.clear();
@@ -28,7 +31,7 @@ public class GlobalHotkeyListener {
         return running;
     }
 
-    public void handleKeyPressed(KeyCode keyCode) {
+    public void nativeKey(KeyCode keyCode) {
         if (!running || hotkeyCombo.isEmpty()) return;
 
         currentPressedKeys.add(keyCode);
@@ -37,6 +40,7 @@ public class GlobalHotkeyListener {
             callback.run();
         }
     }
+
 
     public void handleKeyReleased(KeyCode keyCode) {
         currentPressedKeys.remove(keyCode);
