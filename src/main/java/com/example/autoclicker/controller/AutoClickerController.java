@@ -2,7 +2,11 @@ package com.example.autoclicker.controller;
 
 import com.example.autoclicker.domain.AutoClickerEngine;
 import com.example.autoclicker.domain.AutoClickerSetting;
+import com.example.autoclicker.enums.ClickType;
+import com.example.autoclicker.enums.MouseButton;
+import com.example.autoclicker.enums.StatusState;
 import com.example.autoclicker.service.HotkeyService;
+import com.example.autoclicker.service.MacroService;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -28,8 +32,13 @@ import java.util.function.UnaryOperator;
 
 public class AutoClickerController {
 
-    private final HotkeyService hotkeyService;
 
+
+
+    private final HotkeyService hotkeyService;
+    private final MacroService macroService;
+
+    private boolean isMacroRecorrding = false;
     private boolean isRunning = false;
     private long startTimeMillis = 0;
     private Timeline statsTimeline;
@@ -48,10 +57,10 @@ public class AutoClickerController {
     private CheckBox infiniteClicksCheck;
 
     @FXML
-    private ComboBox<AutoClickerSetting.ClickType> clickTypeCombo;
+    private ComboBox<ClickType> clickTypeCombo;
 
     @FXML
-    private ComboBox<AutoClickerSetting.MouseButton> mouseButtonCombo;
+    private ComboBox<MouseButton> mouseButtonCombo;
 
     @FXML
     private Label cpsEstimateLabel;
@@ -89,17 +98,22 @@ public class AutoClickerController {
     @FXML
     private TextArea statusArea;
 
-    public AutoClickerController(HotkeyService hotkeyService) {
+    @FXML
+    private Button macroButton;
+
+
+    public AutoClickerController(HotkeyService hotkeyService, MacroService macroService) {
         this.hotkeyService = hotkeyService;
+        this.macroService = macroService;
     }
 
     @FXML
     public void initialize() {
-        clickTypeCombo.getItems().addAll(AutoClickerSetting.ClickType.values());
-        mouseButtonCombo.getItems().addAll(AutoClickerSetting.MouseButton.values());
+        clickTypeCombo.getItems().addAll(ClickType.values());
+        mouseButtonCombo.getItems().addAll(MouseButton.values());
 
-        clickTypeCombo.setValue(AutoClickerSetting.ClickType.SIMPLES);
-        mouseButtonCombo.setValue(AutoClickerSetting.MouseButton.ESQUERDO);
+        clickTypeCombo.setValue(ClickType.SIMPLES);
+        mouseButtonCombo.setValue(MouseButton.ESQUERDO);
         intervalField.setText("100");
         delayField.setText("0");
         clickCountField.setText("100");
@@ -206,6 +220,19 @@ public class AutoClickerController {
     }
 
     @FXML
+    public void startMacroRec(){
+        if (isMacroRecorrding){
+            log("Lendo macro para parar a gravação so apertar [Esc]");
+        }
+
+        macroService.captureMacro(() -> {
+            Platform.runLater(() -> {
+                log("Macro atualizado com sucesso!");
+            });
+        });
+    }
+
+    @FXML
     public void disableInfiniteClick() {
         boolean isInfinite = infiniteClicksCheck.isSelected();
         clickCountField.setDisable(isInfinite);
@@ -282,9 +309,6 @@ public class AutoClickerController {
         log(String.format("Finalizado: %,d cliques em %.2fs.", finalClicks, totalSeconds));
     }
 
-    private enum StatusState {
-        READY, RUNNING, RECORDING
-    }
 
     private void updateStatusView(StatusState state) {
         statusBadge.getStyleClass().removeAll("status-badge-ready", "status-badge-running", "status-badge-recording");
@@ -333,8 +357,8 @@ public class AutoClickerController {
         int delay = Integer.parseInt(delayField.getText().trim());
         boolean infinite = infiniteClicksCheck.isSelected();
         int clickCount = infinite ? 0 : Integer.parseInt(clickCountField.getText().trim());
-        AutoClickerSetting.ClickType clickType = clickTypeCombo.getValue();
-        AutoClickerSetting.MouseButton mouseButton = mouseButtonCombo.getValue();
+        ClickType clickType = clickTypeCombo.getValue();
+        MouseButton mouseButton = mouseButtonCombo.getValue();
 
         if (infinite) {
             return AutoClickerSetting.infiniteClicks(interval, clickType, mouseButton, delay);

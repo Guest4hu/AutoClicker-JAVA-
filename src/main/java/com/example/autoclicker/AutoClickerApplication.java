@@ -2,7 +2,9 @@ package com.example.autoclicker;
 
 import com.example.autoclicker.controller.AutoClickerController;
 import com.example.autoclicker.domain.AutoClickerEngine;
+import com.example.autoclicker.enums.ClickType;
 import com.example.autoclicker.service.HotkeyService;
+import com.example.autoclicker.service.MacroService;
 import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.NativeHookException;
 import javafx.application.Application;
@@ -10,6 +12,7 @@ import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
+import javafx.scene.input.MouseButton;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -23,10 +26,11 @@ public class AutoClickerApplication extends Application {
 
         // Instancia o serviço de atalhos
         HotkeyService hotkeyService = new HotkeyService();
+        MacroService macroService = new MacroService();
 
         // Carrega o FXML injetando o Controller
         FXMLLoader fxmlLoader = new FXMLLoader(AutoClickerApplication.class.getResource("autoClicker-view.fxml"));
-        fxmlLoader.setControllerFactory(param -> new AutoClickerController(hotkeyService));
+        fxmlLoader.setControllerFactory(param -> new AutoClickerController(hotkeyService, macroService));
 
         Scene scene = new Scene(fxmlLoader.load(), 580, 740);
 

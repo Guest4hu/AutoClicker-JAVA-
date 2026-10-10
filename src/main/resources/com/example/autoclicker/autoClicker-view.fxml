@@ -144,6 +144,9 @@
                 </HBox>
             </VBox>
 
+
+            <Button text="Iniciar Gravação Macro" onAction="#startMacroRec" fx:id="macroButton">
+
             <!-- Card 6: Logs -->
             <VBox spacing="6.0" styleClass="card">
                 <HBox alignment="CENTER_LEFT" spacing="8.0">

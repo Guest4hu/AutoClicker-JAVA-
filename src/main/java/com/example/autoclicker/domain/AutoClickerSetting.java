@@ -1,65 +1,15 @@
 package com.example.autoclicker.domain;
 
 
-import java.awt.event.InputEvent;
+import com.example.autoclicker.enums.ClickType;
+import com.example.autoclicker.enums.MouseButton;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 
 public class AutoClickerSetting {
-	public enum ClickType {
-		SIMPLES(1, "Clique Simples"),
-		DUPLO(2, "Clique Duplo");
-
-		private final int label;
-		private final String displayName;
-
-		ClickType(int label, String displayName) {
-			this.label = label;
-			this.displayName = displayName;
-		}
-
-		public int getLabel() {
-			return label;
-		}
-
-		public String getDisplayName() {
-			return displayName;
-		}
-
-		@Override
-		public String toString() {
-			return displayName;
-		}
-	}
-
-	public enum MouseButton {
-		ESQUERDO(InputEvent.BUTTON1_DOWN_MASK, "Botão Esquerdo (Primário)"),
-		DIREITO(InputEvent.BUTTON3_DOWN_MASK, "Botão Direito (Secundário)"),
-		MEIO(InputEvent.BUTTON2_DOWN_MASK, "Botão do Meio (Scroll)");
-
-		private final int label;
-		private final String displayName;
-
-		MouseButton(int label, String displayName) {
-			this.label = label;
-			this.displayName = displayName;
-		}
-
-		public int getLabel() {
-			return label;
-		}
-
-		public String getDisplayName() {
-			return displayName;
-		}
-
-		@Override
-		public String toString() {
-			return displayName;
-		}
-	}
 
 	private int interval;
 	private int delay;
