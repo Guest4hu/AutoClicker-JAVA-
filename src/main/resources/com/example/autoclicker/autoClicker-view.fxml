@@ -1,89 +1,158 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.*?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
 
-<StackPane prefHeight="720.0" prefWidth="800.0" style="-fx-background-color: linear-gradient(to bottom, #0f172a, #111827);" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.autoclicker.controller.AutoClickerController">
-    <VBox alignment="CENTER" maxWidth="560.0" prefWidth="560.0" spacing="12.0">
-        <padding>
-            <Insets bottom="24.0" left="24.0" right="24.0" top="24.0" />
-        </padding>
-
-        <Label style="-fx-text-fill: white; -fx-font-size: 30px; -fx-font-weight: bold;" text="AutoClicker" />
-
-        <VBox spacing="16.0" style="-fx-background-color: rgba(15, 23, 42, 0.92); -fx-background-radius: 18; -fx-border-color: rgba(148, 163, 184, 0.18); -fx-border-radius: 18; -fx-border-width: 1;">
+<StackPane stylesheets="@styles.css" styleClass="app-container" prefWidth="560.0" prefHeight="730.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.autoclicker.controller.AutoClickerController">
+    <ScrollPane fitToWidth="true" styleClass="app-scroll" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED">
+        <VBox alignment="TOP_CENTER" spacing="11.0">
             <padding>
-                <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+                <Insets top="16.0" right="18.0" bottom="18.0" left="18.0" />
             </padding>
 
-            <Label style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;" text="Configurações principais" />
-            <Separator />
+            <!-- Header -->
+            <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="header-box">
+                <ImageView fitHeight="28.0" fitWidth="28.0" pickOnBounds="true" preserveRatio="true">
+                    <image>
+                        <Image url="@icon.png" />
+                    </image>
+                </ImageView>
+                <Label text="AutoClicker" styleClass="app-title" />
 
-                <VBox spacing="12.0">
-                    <HBox alignment="CENTER_LEFT" spacing="12.0">
-                        <Label prefWidth="180.0" style="-fx-text-fill: #cbd5e1;" text="Intervalo entre cliques (ms)" />
-                        <TextField fx:id="intervalField" promptText="Ex: 100" HBox.hgrow="ALWAYS" />
-                    </HBox>
+                <Region HBox.hgrow="ALWAYS" />
 
-                    <HBox alignment="CENTER_LEFT" spacing="12.0">
-                        <Label prefWidth="180.0" style="-fx-text-fill: #cbd5e1;" text="Atraso inicial (ms)" />
-                        <TextField fx:id="delayField" promptText="Ex: 500" HBox.hgrow="ALWAYS" />
-                    </HBox>
-
-                    <HBox alignment="CENTER_LEFT" spacing="12.0">
-                        <Label prefWidth="180.0" style="-fx-text-fill: #cbd5e1;" text="Quantidade de cliques" />
-                        <TextField fx:id="clickCountField" promptText="Ex: 200" HBox.hgrow="ALWAYS" />
-                        <CheckBox fx:id="infiniteClicksCheck" onAction="#disableInfiniteClick" style="-fx-text-fill: #cbd5e1;" text="Infinito" />
-                    </HBox>
-
-                    <HBox alignment="CENTER_LEFT" spacing="12.0">
-                        <Label prefWidth="180.0" style="-fx-text-fill: #cbd5e1;" text="Tipo de clique" />
-                        <ComboBox fx:id="clickTypeCombo" promptText="Selecione" HBox.hgrow="ALWAYS" />
-                    </HBox>
-
-                    <HBox alignment="CENTER_LEFT" spacing="12.0">
-                        <Label prefWidth="180.0" style="-fx-text-fill: #cbd5e1;" text="Botão do mouse" />
-                        <ComboBox fx:id="mouseButtonCombo" promptText="Selecione" HBox.hgrow="ALWAYS" />
-                    </HBox>
-
-                    <HBox alignment="CENTER_LEFT" spacing="12.0">
-                        <Label prefWidth="180.0" style="-fx-text-fill: #cbd5e1;" text="Tecla de atalho" />
-                        <Button fx:id="hotKeyButton" onAction="#selectHotKeyButton" text="Selecionar Tecla de Atalho" HBox.hgrow="ALWAYS" />
-                    </HBox>
-                </VBox>
-
-            <HBox alignment="CENTER_RIGHT" spacing="10.0">
-                <Button fx:id="startButton" defaultButton="true" onAction="#buttonStopAndStart" style="-fx-background-color: #00ff00; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10;" text="Iniciar" />
+                <!-- Badge de Status -->
+                <HBox fx:id="statusBadge" alignment="CENTER" spacing="6.0" styleClass="status-badge, status-badge-ready">
+                    <Circle fx:id="statusDot" radius="3.5" fill="#a3a3a3" />
+                    <Label fx:id="statusText" text="PRONTO" styleClass="status-text" />
+                </HBox>
             </HBox>
-             <Label style="-fx-text-fill: #cbd5e1; -fx-font-weight: bold;" text="Notas / Status visual" />
-             <TextArea fx:id="statusArea" editable="false" promptText="Espaço para mensagens, logs curtos ou instruções do usuário." wrapText="true" VBox.vgrow="ALWAYS" />
+
+            <!-- Card 1: Intervalo e Frequência -->
+            <VBox spacing="9.0" styleClass="card">
+                <HBox alignment="CENTER_LEFT" spacing="8.0">
+                    <Label text="Intervalo entre cliques" styleClass="card-title" />
+                    <Region HBox.hgrow="ALWAYS" />
+                    <Label fx:id="cpsEstimateLabel" text="~10.0 CPS" styleClass="cps-badge" />
+                </HBox>
+
+                <HBox alignment="CENTER_LEFT" spacing="12.0">
+                    <Label text="Intervalo:" styleClass="field-label" prefWidth="120.0" />
+                    <TextField fx:id="intervalField" promptText="100" HBox.hgrow="ALWAYS" />
+                    <Label text="ms" styleClass="field-label" />
+                </HBox>
+
+                <!-- Presets Rápidos -->
+                <HBox alignment="CENTER_LEFT" spacing="6.0">
+                    <Label text="Presets:" styleClass="hint-label" prefWidth="60.0" />
+                    <Button fx:id="preset1Btn" text="1 ms" onAction="#handlePreset" styleClass="btn-preset" />
+                    <Button fx:id="preset10Btn" text="10 ms" onAction="#handlePreset" styleClass="btn-preset" />
+                    <Button fx:id="preset50Btn" text="50 ms" onAction="#handlePreset" styleClass="btn-preset" />
+                    <Button fx:id="preset100Btn" text="100 ms" onAction="#handlePreset" styleClass="btn-preset" />
+                    <Button fx:id="preset500Btn" text="500 ms" onAction="#handlePreset" styleClass="btn-preset" />
+                    <Button fx:id="preset1000Btn" text="1000 ms" onAction="#handlePreset" styleClass="btn-preset" />
+                </HBox>
+
+                <HBox alignment="CENTER_LEFT" spacing="12.0">
+                    <Label text="Atraso inicial:" styleClass="field-label" prefWidth="120.0" />
+                    <TextField fx:id="delayField" promptText="0" HBox.hgrow="ALWAYS" />
+                    <Label text="ms" styleClass="field-label" />
+                </HBox>
+            </VBox>
+
+            <!-- Card 2: Mouse -->
+            <VBox spacing="9.0" styleClass="card">
+                <Label text="Configuração do mouse" styleClass="card-title" />
+
+                <HBox spacing="14.0">
+                    <VBox spacing="5.0" HBox.hgrow="ALWAYS">
+                        <Label text="Botão do mouse" styleClass="field-label" />
+                        <ComboBox fx:id="mouseButtonCombo" maxWidth="Infinity" />
+                    </VBox>
+                    <VBox spacing="5.0" HBox.hgrow="ALWAYS">
+                        <Label text="Tipo de clique" styleClass="field-label" />
+                        <ComboBox fx:id="clickTypeCombo" maxWidth="Infinity" />
+                    </VBox>
+                </HBox>
+            </VBox>
+
+            <!-- Card 3: Modo de Repetição -->
+            <VBox spacing="9.0" styleClass="card">
+                <HBox alignment="CENTER_LEFT" spacing="8.0">
+                    <Label text="Modo de repetição" styleClass="card-title" />
+                    <Region HBox.hgrow="ALWAYS" />
+                    <CheckBox fx:id="infiniteClicksCheck" text="Infinito" onAction="#disableInfiniteClick" selected="false" />
+                </HBox>
+
+                <HBox alignment="CENTER_LEFT" spacing="12.0">
+                    <Label text="Quantidade de cliques:" styleClass="field-label" prefWidth="160.0" />
+                    <TextField fx:id="clickCountField" promptText="100" HBox.hgrow="ALWAYS" />
+                    <Label text="cliques" styleClass="field-label" />
+                </HBox>
+            </VBox>
+
+            <!-- Card 4: Atalho -->
+            <VBox spacing="9.0" styleClass="card">
+                <HBox alignment="CENTER_LEFT" spacing="8.0">
+                    <Label text="Tecla de atalho (Global)" styleClass="card-title" />
+                    <Region HBox.hgrow="ALWAYS" />
+                </HBox>
+
+                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                    <Label text="Atalho:" styleClass="field-label" />
+                    <Label fx:id="hotKeyBadge" text="F6" styleClass="key-badge" />
+                    <Region HBox.hgrow="ALWAYS" />
+                    <Button fx:id="hotKeyButton" text="Alterar" onAction="#selectHotKeyButton" styleClass="btn-secondary" />
+                    <Button fx:id="resetHotkeyBtn" text="Padrão (F6)" onAction="#resetDefaultHotkey" styleClass="btn-secondary" />
+                </HBox>
+            </VBox>
+
+            <!-- Card 5: Ação & Métricas -->
+            <VBox spacing="10.0" styleClass="card">
+                <!-- Botão Iniciar / Parar -->
+                <Button fx:id="startButton" text="Iniciar (F6)" defaultButton="true" onAction="#buttonStopAndStart" maxWidth="Infinity" prefHeight="44.0" styleClass="btn-action-start" />
+
+                <!-- Métricas -->
+                <HBox spacing="8.0">
+                    <VBox alignment="CENTER" spacing="2.0" HBox.hgrow="ALWAYS" styleClass="stats-box">
+                        <Label fx:id="statClicksLabel" text="0" styleClass="stat-value" />
+                        <Label text="CLIQUES" styleClass="stat-label" />
+                    </VBox>
+
+                    <VBox alignment="CENTER" spacing="2.0" HBox.hgrow="ALWAYS" styleClass="stats-box">
+                        <Label fx:id="statTimeLabel" text="00:00:00" styleClass="stat-value" />
+                        <Label text="TEMPO" styleClass="stat-label" />
+                    </VBox>
+
+                    <VBox alignment="CENTER" spacing="2.0" HBox.hgrow="ALWAYS" styleClass="stats-box">
+                        <Label fx:id="statCpsLabel" text="0.0" styleClass="stat-value" />
+                        <Label text="CPS" styleClass="stat-label" />
+                    </VBox>
+                </HBox>
+            </VBox>
+
+            <!-- Card 6: Logs -->
+            <VBox spacing="6.0" styleClass="card">
+                <HBox alignment="CENTER_LEFT" spacing="8.0">
+                    <Label text="Logs" styleClass="card-title" />
+                    <Region HBox.hgrow="ALWAYS" />
+                    <Button fx:id="clearLogButton" text="Limpar" onAction="#clearLog" styleClass="btn-secondary" />
+                </HBox>
+                <TextArea fx:id="statusArea" editable="false" prefRowCount="3" wrapText="true" styleClass="terminal-area" />
+            </VBox>
         </VBox>
-
-<!--            <VBox prefWidth="480.0" spacing="16.0" style="-fx-background-color: rgba(15, 23, 42, 0.92); -fx-background-radius: 18; -fx-border-color: rgba(148, 163, 184, 0.18); -fx-border-radius: 18; -fx-border-width: 1;">-->
-<!--                <padding>-->
-<!--                    <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />-->
-<!--                </padding>-->
-
-<!--                <Label style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;" text="Pontos e monitoramento" />-->
-<!--                <Separator />-->
-
-<!--                <VBox spacing="8.0">-->
-<!--                    <Label style="-fx-text-fill: #cbd5e1; -fx-font-weight: bold;" text="Pontos de clique" />-->
-<!--                    <ListView fx:id="pointsList" prefHeight="220.0" />-->
-<!--                </VBox>-->
-
-<!--                <HBox spacing="10.0">-->
-<!--                    <Button fx:id="addPointButton" maxWidth="1.7976931348623157E308" style="-fx-background-color: #2563eb; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10;" text="Adicionar ponto" HBox.hgrow="ALWAYS" />-->
-<!--                    <Button fx:id="removePointButton" maxWidth="1.7976931348623157E308" style="-fx-background-color: #334155; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10;" text="Remover" HBox.hgrow="ALWAYS" />-->
-<!--                </HBox>-->
-
-<!--                <HBox spacing="10.0">-->
-<!--                    <Button fx:id="captureButton" maxWidth="1.7976931348623157E308" style="-fx-background-color: #7c3aed; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10;" text="Capturar posição" HBox.hgrow="ALWAYS" />-->
-<!--                    <Button fx:id="clearButton" maxWidth="1.7976931348623157E308" style="-fx-background-color: #475569; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10;" text="Limpar tudo" HBox.hgrow="ALWAYS" />-->
-<!--                </HBox>-->
-
-<!--                <VBox spacing="8.0" VBox.vgrow="ALWAYS" />-->
-<!--            </VBox>-->
-    </VBox>
+    </ScrollPane>
 </StackPane>

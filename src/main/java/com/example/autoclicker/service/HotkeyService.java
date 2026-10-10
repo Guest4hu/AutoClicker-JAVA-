@@ -18,7 +18,17 @@ public class HotkeyService {
     private boolean alreadyTriggered = false;
 
     public HotkeyService() {
+        // Define F6 como atalho padrão
+        hotKeyConfig.add(NativeKeyEvent.VC_F6);
+    }
 
+    public void resetDefaultHotkey() {
+        hotKeyConfig.clear();
+        hotKeyConfig.add(NativeKeyEvent.VC_F6);
+    }
+
+    public boolean isCapturing() {
+        return capturing;
     }
 
     public void start(Runnable onHotkeyTriggered) {
