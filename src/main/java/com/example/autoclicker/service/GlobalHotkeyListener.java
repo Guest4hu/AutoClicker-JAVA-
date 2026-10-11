@@ -1,11 +1,12 @@
 package com.example.autoclicker.service;
 
-import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
 import javafx.scene.input.KeyCode;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+
+@Deprecated
 public class GlobalHotkeyListener implements NativeKeyListener {
     private Runnable callback;
     private volatile boolean running = false;
