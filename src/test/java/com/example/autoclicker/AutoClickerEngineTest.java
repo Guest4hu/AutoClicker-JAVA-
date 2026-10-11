@@ -2,6 +2,8 @@ package com.example.autoclicker;
 
 import com.example.autoclicker.domain.AutoClickerEngine;
 import com.example.autoclicker.domain.AutoClickerSetting;
+import com.example.autoclicker.enums.ClickType;
+import com.example.autoclicker.enums.MouseButton;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -20,15 +22,15 @@ class AutoClickerEngineTest {
 
         AutoClickerSetting setting = AutoClickerSetting.limitedClicks(
                 10, // 10ms por clique
-                AutoClickerSetting.ClickType.SIMPLES,
-                AutoClickerSetting.MouseButton.ESQUERDO,
+                ClickType.SIMPLES,
+                MouseButton.ESQUERDO,
                 0,
                 expectedClicks
         );
 
         AutoClickerEngine.setSetting(setting);
         AutoClickerEngine.setProgressListener(reportedClicks::set);
-        AutoClickerEngine.setFinishListener(latch::countDown);
+        AutoClickerEngine.getInstance().setFinishListener(latch::countDown);
 
         AutoClickerEngine.startAutoClicker();
 
@@ -36,6 +38,6 @@ class AutoClickerEngineTest {
         assertTrue(finished, "O ciclo de cliques com compensação de deriva deve terminar no prazo");
         assertEquals(expectedClicks, AutoClickerEngine.getTotalClicks());
         assertEquals(expectedClicks, reportedClicks.get());
-        assertFalse(AutoClickerEngine.isRunning());
+        assertFalse(AutoClickerEngine.getInstance().isRunning());
     }
 }

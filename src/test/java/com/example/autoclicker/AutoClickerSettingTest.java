@@ -1,6 +1,8 @@
 package com.example.autoclicker;
 
 import com.example.autoclicker.domain.AutoClickerSetting;
+import com.example.autoclicker.enums.ClickType;
+import com.example.autoclicker.enums.MouseButton;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -13,8 +15,8 @@ class AutoClickerSettingTest {
     void testValidInfiniteSetting() {
         AutoClickerSetting setting = AutoClickerSetting.infiniteClicks(
                 50,
-                AutoClickerSetting.ClickType.SIMPLES,
-                AutoClickerSetting.MouseButton.ESQUERDO,
+                ClickType.SIMPLES,
+                MouseButton.ESQUERDO,
                 0
         );
 
@@ -30,8 +32,8 @@ class AutoClickerSettingTest {
     void testValidLimitedSetting() {
         AutoClickerSetting setting = AutoClickerSetting.limitedClicks(
                 100,
-                AutoClickerSetting.ClickType.DUPLO,
-                AutoClickerSetting.MouseButton.DIREITO,
+                ClickType.DUPLO,
+                MouseButton.DIREITO,
                 500,
                 200
         );
@@ -47,8 +49,8 @@ class AutoClickerSettingTest {
     void testInvalidSettings() {
         AutoClickerSetting invalid = AutoClickerSetting.limitedClicks(
                 0,
-                AutoClickerSetting.ClickType.SIMPLES,
-                AutoClickerSetting.MouseButton.ESQUERDO,
+                ClickType.SIMPLES,
+                MouseButton.ESQUERDO,
                 -10,
                 0
         );
