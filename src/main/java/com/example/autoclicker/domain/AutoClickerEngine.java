@@ -1,35 +1,32 @@
 package com.example.autoclicker.domain;
 
-
-import java.awt.AWTException;
-import java.awt.Robot;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-public class AutoClickerEngine {
+public class AutoClickerEngine extends AbstractEngine {
+
+    private static final AutoClickerEngine INSTANCE = new AutoClickerEngine();
+
     private static AutoClickerSetting setting;
-    private static Robot robot;
-    private static Thread workerThread;
-    private static volatile boolean running;
     private static Consumer<Integer> progressListener;
-    private static Runnable finishListener;
     private static final AtomicInteger totalClicksCounter = new AtomicInteger(0);
 
-    static {
-        try {
-            robot = new Robot();
-        } catch (AWTException e) {
-            throw new RuntimeException(e);
-        }
+    public static AutoClickerEngine getInstance() {
+        return INSTANCE;
     }
+
+    // --- Métodos Estáticos (Fachada para compatibilidade com o Controller) ---
 
     public static void setProgressListener(Consumer<Integer> listener) {
         progressListener = listener;
     }
 
-    public static void setFinishListener(Runnable listener) {
-        finishListener = listener;
+    @Override
+    public void setFinishListener(Runnable listener) {
+        super.setFinishListener(listener);
+        if (this != INSTANCE) {
+            INSTANCE.setFinishListener(listener);
+        }
     }
 
     public static int getTotalClicks() {
@@ -40,34 +37,54 @@ public class AutoClickerEngine {
         if (setting == null) {
             throw new IllegalStateException("Configurações do AutoClicker não definidas.");
         }
-        if (running) {
+        totalClicksCounter.set(0);
+        INSTANCE.start("auto-clicker-worker");
+    }
+
+    public static synchronized void stopAutoClicker() {
+        INSTANCE.stop();
+    }
+
+    public static AutoClickerSetting getSetting() {
+        return setting;
+    }
+
+    public static synchronized void setSetting(AutoClickerSetting newSetting) {
+        setting = newSetting;
+    }
+
+    @Override
+    public boolean isRunning() {
+        return super.isRunning() || INSTANCE.running;
+    }
+
+    // --- Implementação do Template Method ---
+
+    @Override
+    protected void execute() {
+        if (setting == null) {
             return;
         }
 
-        totalClicksCounter.set(0);
-        running = true;
-        workerThread = new Thread(() -> {
-            try {
-                if (setting.getDelay() > 0 && !sleepMillis(setting.getDelay())) {
-                    return;
-                }
+        if (setting.getDelay() > 0 && !sleepMillis(setting.getDelay())) {
+            return;
+        }
 
-                if (setting.isInfiniteClick()) {
-                    autoClickerInfinite();
-                } else {
-                    autoClickerCounts();
-                }
-            } finally {
-                running = false;
-                releaseMouseSafely();
-            }
-        }, "auto-clicker-worker");
-
-        workerThread.setDaemon(true);
-        workerThread.start();
+        if (setting.isInfiniteClick()) {
+            autoClickerInfinite();
+        } else {
+            autoClickerCounts();
+        }
     }
 
-    private static void autoClickerInfinite() {
+    @Override
+    protected void cleanUp() {
+        releaseMouseSafely();
+    }
+
+    // --- Lógica Interna de Automação ---
+
+    private void autoClickerInfinite() {
         long intervalNanos = (long) setting.getInterval() * 1_000_000L;
         long targetTimeNanos = System.nanoTime();
 
@@ -91,7 +108,7 @@ public class AutoClickerEngine {
         }
     }
 
-    private static void autoClickerCounts() {
+    private void autoClickerCounts() {
         int remainingClicks = setting.getClickCount();
         long intervalNanos = (long) setting.getInterval() * 1_000_000L;
         long targetTimeNanos = System.nanoTime();
@@ -113,14 +130,9 @@ public class AutoClickerEngine {
                 }
             }
         }
-
-        running = false;
-        if (finishListener != null) {
-            finishListener.run();
-        }
     }
 
-    private static void clickOnce() {
+    private void clickOnce() {
         int totalClicks = setting.getClickType().getLabel();
         int mouseMask = setting.getMouseButton().getLabel();
 
@@ -148,53 +160,6 @@ public class AutoClickerEngine {
         }
     }
 
-    private static boolean sleepUntil(long targetTimeNanos) {
-        final long SPIN_THRESHOLD_NANOS = 2_000_000L; // 2 ms
-
-        while (running) {
-            long remaining = targetTimeNanos - System.nanoTime();
-            if (remaining <= 0) {
-                return true;
-            }
-
-            if (remaining > SPIN_THRESHOLD_NANOS) {
-                long sleepMillis = (remaining - SPIN_THRESHOLD_NANOS) / 1_000_000L;
-                if (sleepMillis > 0) {
-                    try {
-                        Thread.sleep(sleepMillis);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        running = false;
-                        return false;
-                    }
-                } else {
-                    Thread.yield();
-                }
-            } else {
-                Thread.onSpinWait();
-            }
-        }
-        return running;
-    }
-
-    private static boolean sleepMillis(int millis) {
-        if (millis <= 0) {
-            return running;
-        }
-        long target = System.nanoTime() + (long) millis * 1_000_000L;
-        return sleepUntil(target);
-    }
-
-    public static synchronized void stopAutoClicker() {
-        running = false;
-
-        if (workerThread != null) {
-            workerThread.interrupt();
-            workerThread = null;
-        }
-        releaseMouseSafely();
-    }
-
     private static void releaseMouseSafely() {
         if (setting != null && robot != null && setting.getMouseButton() != null) {
             try {
@@ -202,17 +167,5 @@ public class AutoClickerEngine {
             } catch (Exception ignored) {
             }
         }
-    }
-
-    public static AutoClickerSetting getSetting() {
-        return setting;
-    }
-
-    public static synchronized void setSetting(AutoClickerSetting setting) {
-        AutoClickerEngine.setting = setting;
-    }
-
-    public static boolean isRunning() {
-        return running;
     }
 }
