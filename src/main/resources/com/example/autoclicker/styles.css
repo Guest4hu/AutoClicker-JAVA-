@@ -379,3 +379,73 @@
     -fx-padding: 0;
     -fx-opacity: 0;
 }
+
+/* ==============================================================
+   Aba Macro e Componentes Adicionais
+   ============================================================== */
+
+.app-tabs .tab-header-area .tab-header-background {
+    -fx-background-color: #111111;
+}
+
+.app-tabs .tab {
+    -fx-background-color: #171717;
+    -fx-background-radius: 6 6 0 0;
+    -fx-padding: 8 16;
+}
+
+.app-tabs .tab:selected {
+    -fx-background-color: #222222;
+    -fx-border-color: #dc2626;
+    -fx-border-width: 0 0 2 0;
+}
+
+.app-tabs .tab .tab-label {
+    -fx-text-fill: #a3a3a3;
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
+}
+
+.app-tabs .tab:selected .tab-label {
+    -fx-text-fill: #ffffff;
+}
+
+.content-container {
+    -fx-padding: 16 18 18 18;
+}
+
+.btn-primary {
+    -fx-background-color: #dc2626;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6;
+    -fx-padding: 8 14;
+    -fx-cursor: hand;
+}
+
+.btn-primary:hover {
+    -fx-background-color: #ef4444;
+}
+
+.macro-list {
+    -fx-background-color: #141414;
+    -fx-border-color: #262626;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+
+.macro-list .list-cell {
+    -fx-background-color: #141414;
+    -fx-text-fill: #e5e5e5;
+    -fx-padding: 6 10;
+    -fx-font-size: 12px;
+}
+
+.macro-list .list-cell:filled:hover {
+    -fx-background-color: #222222;
+}
+
+.macro-list .list-cell:filled:selected {
+    -fx-background-color: #381a1a;
+    -fx-text-fill: #f87171;
+}

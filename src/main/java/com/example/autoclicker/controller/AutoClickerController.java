@@ -1,30 +1,30 @@
 package com.example.autoclicker.controller;
 
+import com.example.autoclicker.DTO.MacroSettingDTO;
 import com.example.autoclicker.domain.AutoClickerEngine;
 import com.example.autoclicker.domain.AutoClickerSetting;
+import com.example.autoclicker.domain.MacroEngine;
 import com.example.autoclicker.enums.ClickType;
 import com.example.autoclicker.enums.MouseButton;
 import com.example.autoclicker.enums.StatusState;
+import com.example.autoclicker.service.DialogService;
 import com.example.autoclicker.service.HotkeyService;
 import com.example.autoclicker.service.MacroService;
+import com.example.autoclicker.service.MacroStorageService;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
-import javafx.scene.control.TextFormatter;
+import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.util.Duration;
 
+import java.io.IOException;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -32,13 +32,14 @@ import java.util.function.UnaryOperator;
 
 public class AutoClickerController {
 
-
-
-
     private final HotkeyService hotkeyService;
     private final MacroService macroService;
+    private final DialogService dialogService;
+    private final MacroStorageService macroStorageService;
+    private final AutoClickerEngine autoClickerEngine = new AutoClickerEngine();
+    private final MacroEngine macroEngine = new MacroEngine();
 
-    private boolean isMacroRecorrding = false;
+    private boolean isMacroRecording = false;
     private boolean isRunning = false;
     private long startTimeMillis = 0;
     private Timeline statsTimeline;
@@ -46,6 +47,12 @@ public class AutoClickerController {
 
     @FXML
     private TextField intervalField;
+
+    @FXML
+    private ListView<String> macroListView;
+
+    @FXML
+    private Button runMacroButton;
 
     @FXML
     private TextField delayField;
@@ -101,10 +108,31 @@ public class AutoClickerController {
     @FXML
     private Button macroButton;
 
+    @FXML
+    private Button buttonSaveMacro;
 
-    public AutoClickerController(HotkeyService hotkeyService, MacroService macroService) {
+    @FXML
+    private TextArea macroStatusAreas;
+
+    /**
+     * Construtor padrão sem argumentos exigido pelo JavaFX e IDEs (SceneBuilder/IntelliJ).
+     */
+    public AutoClickerController() {
+        this(new HotkeyService(), new MacroService(), new DialogService(), new MacroStorageService());
+    }
+
+    public AutoClickerController(HotkeyService hotkeyService) {
+        this(hotkeyService, new MacroService(), new DialogService(), new MacroStorageService());
+    }
+
+    /**
+     * Construtor com injeção de dependências utilizado pela Factory na Application.
+     */
+    public AutoClickerController(HotkeyService hotkeyService, MacroService macroService, DialogService dialogService, MacroStorageService macroStorageService) {
         this.hotkeyService = hotkeyService;
         this.macroService = macroService;
+        this.dialogService = dialogService;
+        this.macroStorageService = macroStorageService;
     }
 
     @FXML
@@ -131,7 +159,7 @@ public class AutoClickerController {
             Platform.runLater(() -> statClicksLabel.setText(String.format("%,d", clicks)));
         });
 
-        AutoClickerEngine.setFinishListener(() -> {
+        autoClickerEngine.setFinishListener(() -> {
             Platform.runLater(this::handleAutoFinished);
         });
 
@@ -140,6 +168,17 @@ public class AutoClickerController {
         log("AutoClicker iniciado. Atalho: " + hotkeyService.getHotkeyText());
 
         Platform.runLater(this::ativacaoTeclaDeAtalho);
+
+        macroListView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, selectedMacro) -> {
+            if (selectedMacro != null) {
+                runMacroButton.setDisable(false);
+                carregarDetalhesMacro(selectedMacro);
+            } else {
+                runMacroButton.setDisable(true);
+            }
+        });
+
+        refreshMacroList();
     }
 
     private void setupNumericField(TextField field) {
@@ -155,7 +194,7 @@ public class AutoClickerController {
 
     private void updateCpsEstimate() {
         try {
-            String text = intervalField.getText().trim();
+            String text = intervalField.getText() != null ? intervalField.getText().trim() : "";
             if (text.isEmpty()) {
                 cpsEstimateLabel.setText("- CPS");
                 return;
@@ -220,14 +259,21 @@ public class AutoClickerController {
     }
 
     @FXML
-    public void startMacroRec(){
-        if (isMacroRecorrding){
-            log("Lendo macro para parar a gravação so apertar [Esc]");
+    public void startMacroRec(ActionEvent actionEvent) {
+        if (isMacroRecording) {
+            macroLog("Gravação já em andamento! Pressione [ESC] para finalizar.");
+            return;
         }
+
+        isMacroRecording = true;
+        macroButton.setText("Gravando... (ESC para parar)");
+        macroLog("Iniciando gravação de macro... Execute suas ações e pressione [ESC] para encerrar.");
 
         macroService.captureMacro(() -> {
             Platform.runLater(() -> {
-                log("Macro atualizado com sucesso!");
+                isMacroRecording = false;
+                macroButton.setText("Gravar Macro (ESC para parar)");
+                macroLog("Gravação concluída com sucesso! Total de ações gravadas: " + macroService.getMacroActions().size());
             });
         });
     }
@@ -240,7 +286,7 @@ public class AutoClickerController {
             clickCountField.setPromptText("Infinito");
         } else {
             clickCountField.setPromptText("100");
-            if (clickCountField.getText().isEmpty()) {
+            if (clickCountField.getText() == null || clickCountField.getText().isEmpty()) {
                 clickCountField.setText("100");
             }
         }
@@ -309,7 +355,6 @@ public class AutoClickerController {
         log(String.format("Finalizado: %,d cliques em %.2fs.", finalClicks, totalSeconds));
     }
 
-
     private void updateStatusView(StatusState state) {
         statusBadge.getStyleClass().removeAll("status-badge-ready", "status-badge-running", "status-badge-recording");
         startButton.getStyleClass().removeAll("btn-action-start", "btn-action-stop");
@@ -353,10 +398,19 @@ public class AutoClickerController {
     }
 
     public AutoClickerSetting criarAutoClickerSetting() {
-        int interval = Integer.parseInt(intervalField.getText().trim());
-        int delay = Integer.parseInt(delayField.getText().trim());
+        String intervalText = intervalField.getText() != null ? intervalField.getText().trim() : "";
+        int interval = intervalText.isEmpty() ? 100 : Integer.parseInt(intervalText);
+
+        String delayText = delayField.getText() != null ? delayField.getText().trim() : "";
+        int delay = delayText.isEmpty() ? 0 : Integer.parseInt(delayText);
+
         boolean infinite = infiniteClicksCheck.isSelected();
-        int clickCount = infinite ? 0 : Integer.parseInt(clickCountField.getText().trim());
+        int clickCount = 0;
+        if (!infinite) {
+            String countText = clickCountField.getText() != null ? clickCountField.getText().trim() : "";
+            clickCount = countText.isEmpty() ? 100 : Integer.parseInt(countText);
+        }
+
         ClickType clickType = clickTypeCombo.getValue();
         MouseButton mouseButton = mouseButtonCombo.getValue();
 
@@ -414,5 +468,98 @@ public class AutoClickerController {
         String timestamp = LocalTime.now().format(TIME_FORMATTER);
         String entry = "[" + timestamp + "] " + message + "\n";
         statusArea.appendText(entry);
+    }
+
+    private void macroLog(String message) {
+        String timestamp = LocalTime.now().format(TIME_FORMATTER);
+        String entry = "[" + timestamp + "] " + message + "\n";
+        macroStatusAreas.appendText(entry);
+    }
+
+    @FXML
+    public void saveMacro(ActionEvent actionEvent) {
+        if (macroService.getMacroActions().isEmpty()) {
+            macroLog("Nenhuma ação gravada para salvar!");
+            return;
+        }
+
+        dialogService.showMacroDialog().ifPresent(data -> {
+            try {
+                MacroSettingDTO setting = new MacroSettingDTO(
+                        data.name(),
+                        data.description(),
+                        LocalDateTime.now(),
+                        macroService.getMacroActions()
+                );
+
+                macroStorageService.save(setting);
+                macroLog("Macro '" + data.name() + "' salva com sucesso!");
+
+            } catch (Exception e) {
+                macroLog("Erro ao salvar macro: " + e.getMessage());
+            }
+        });
+        refreshMacroList();
+    }
+
+    @FXML
+    public void refreshMacroList() {
+        try {
+            List<String> macros = macroStorageService.listAllSettings();
+            macroListView.getItems().setAll(macros);
+        } catch (IOException e) {
+            macroLog("Erro ao listar macros: " + e.getMessage());
+        }
+    }
+
+    private void carregarDetalhesMacro(String macroName) {
+        try {
+            MacroSettingDTO macro = macroStorageService.load(macroName);
+            macroStatusAreas.clear();
+            macroLog("--- Macro: " + macro.name() + " ---");
+            if (macro.description() != null && !macro.description().isBlank()) {
+                macroLog("Descrição: " + macro.description());
+            }
+            macroLog("Criado em: " + macro.createdAt());
+            macroLog("Ações gravadas (" + macro.configs().size() + "):");
+
+            macro.configs().forEach(action -> macroLog(action.toString()));
+        } catch (IOException e) {
+            macroLog("Erro ao carregar macro: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    public void runSelectedMacro(ActionEvent event) {
+        if (MacroEngine.isMacroRunning()) {
+            MacroEngine.stopMacro();
+            runMacroButton.setText("Executar Macro Selecionada");
+            macroLog("Reprodução da macro cancelada.");
+            return;
+        }
+
+        String selected = macroListView.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            return;
+        }
+
+        try {
+            MacroSettingDTO macro = macroStorageService.load(selected);
+            macroLog("Iniciando reprodução da macro: " + selected + "...");
+            runMacroButton.setText("Parar Macro");
+
+            macroEngine.setFinishListener(() -> {
+                Platform.runLater(() -> {
+                    runMacroButton.setText("Executar Macro Selecionada");
+                    macroLog("Macro '" + selected + "' finalizada com sucesso!");
+                });
+            });
+
+            MacroEngine.startMacro(macro);
+
+        } catch (Exception e) {
+            macroLog("Erro ao executar macro: " + e.getMessage());
+            runMacroButton.setText("Executar Macro Selecionada");
+        }
     }
 }
