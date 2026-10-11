@@ -8,6 +8,7 @@ import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+@Deprecated
 public class JNativeHookConfig implements NativeKeyListener {
     private final GlobalHotkeyListener globalHotkeyListener;
 
