@@ -5,12 +5,15 @@ import com.example.autoclicker.config.NativeKeyConfig;
 import com.example.autoclicker.enums.ActionType;
 
 import java.awt.event.KeyEvent;
+import java.util.function.IntConsumer;
 
 public class MacroEngine extends AbstractEngine {
 
     private static final MacroEngine INSTANCE = new MacroEngine();
 
     private MacroSettingDTO currentMacro;
+    private MacroPlaybackSetting currentPlayback = MacroPlaybackSetting.once();
+    private IntConsumer iterationListener;
     private int lastPressedMouseMask = 0;
     private int lastPressedAwtKey = 0;
 
@@ -21,7 +24,11 @@ public class MacroEngine extends AbstractEngine {
     // --- Métodos Estáticos (Fachada para facilidade de uso) ---
 
     public static synchronized void startMacro(MacroSettingDTO macroActionDto) {
-        INSTANCE.startWith(macroActionDto);
+        INSTANCE.startWith(macroActionDto, MacroPlaybackSetting.once());
+    }
+
+    public static synchronized void startMacro(MacroSettingDTO macroActionDto, MacroPlaybackSetting playbackSetting) {
+        INSTANCE.startWith(macroActionDto, playbackSetting);
     }
 
     public static synchronized void stopMacro() {
@@ -32,6 +39,14 @@ public class MacroEngine extends AbstractEngine {
         INSTANCE.finishListener = listener;
     }
 
+    /**
+     * Registra um ouvinte notificado no início de cada execução da macro.
+     * Recebe o número da execução atual (começando em 1).
+     */
+    public void setIterationListener(IntConsumer listener) {
+        INSTANCE.iterationListener = listener;
+    }
+
     public static boolean isMacroRunning() {
         return INSTANCE.isRunning();
     }
@@ -39,10 +54,15 @@ public class MacroEngine extends AbstractEngine {
     // --- Métodos de Instância ---
 
     public synchronized void startWith(MacroSettingDTO macroActionDto) {
+        startWith(macroActionDto, MacroPlaybackSetting.once());
+    }
+
+    public synchronized void startWith(MacroSettingDTO macroActionDto, MacroPlaybackSetting playbackSetting) {
         if (macroActionDto == null || macroActionDto.configs() == null || macroActionDto.configs().isEmpty()) {
             throw new IllegalStateException("Nenhuma ação gravada para executar.");
         }
         this.currentMacro = macroActionDto;
+        this.currentPlayback = (playbackSetting != null) ? playbackSetting : MacroPlaybackSetting.once();
         start("macro-clicker");
     }
 
@@ -52,20 +72,40 @@ public class MacroEngine extends AbstractEngine {
             return;
         }
 
+        int completedRuns = 0;
+
+        while (running && currentPlayback.hasNextRun(completedRuns)) {
+            notifyIteration(completedRuns + 1);
+
+            if (!playOnce()) {
+                return;
+            }
+            completedRuns++;
+
+            // Só espera o intervalo se ainda houver uma próxima execução
+            if (currentPlayback.hasNextRun(completedRuns)
+                    && !sleepMillis(currentPlayback.intervalMillis())) {
+                return;
+            }
+        }
+    }
+
+    /**
+     * Reproduz uma única vez todas as ações da macro, respeitando os tempos gravados.
+     *
+     * @return true se a execução terminou normalmente; false se foi interrompida
+     */
+    private boolean playOnce() {
         long startTime = System.nanoTime();
 
         for (MacroActionSetting actionSetting : currentMacro.configs()) {
             if (!running) {
-                break;
+                return false;
             }
 
             long targetTime = startTime + (actionSetting.getKeyPressed() * 1_000_000L);
-            if (!sleepUntil(targetTime)) {
-                break;
-            }
-
-            if (!running) {
-                break;
+            if (!sleepUntil(targetTime) || !running) {
+                return false;
             }
 
             if (actionSetting.getActionType() == ActionType.MOUSE) {
@@ -73,6 +113,13 @@ public class MacroEngine extends AbstractEngine {
             } else if (actionSetting.getActionType() == ActionType.TECLADO) {
                 pressKey(actionSetting);
             }
+        }
+        return running;
+    }
+
+    private void notifyIteration(int runNumber) {
+        if (iterationListener != null) {
+            iterationListener.accept(runNumber);
         }
     }
 
