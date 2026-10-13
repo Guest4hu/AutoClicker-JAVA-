@@ -15,6 +15,7 @@ public class HotkeyService {
     private final Set<Integer> currentlyPressedKeys = new HashSet<>();
     private volatile boolean capturing = false;
     private boolean started = false;
+    private boolean stopKeyStarted = false;
     private boolean alreadyTriggered = false;
 
     public HotkeyService() {
@@ -68,6 +69,28 @@ public class HotkeyService {
 
     public Set<Integer> getHotKeyConfig() {
         return hotKeyConfig;
+    }
+
+    /**
+     * Registra um ouvinte global para a tecla ESC, que funciona mesmo com a aplicação
+     * minimizada ou em segundo plano. Só é registrado uma vez.
+     *
+     * @param onStopKeyPressed ação executada (na thread do JNativeHook) ao pressionar ESC
+     */
+    public void registerStopKey(Runnable onStopKeyPressed) {
+        if (stopKeyStarted) {
+            return;
+        }
+        stopKeyStarted = true;
+
+        GlobalScreen.addNativeKeyListener(new NativeKeyListener() {
+            @Override
+            public void nativeKeyPressed(NativeKeyEvent e) {
+                if (e.getKeyCode() == NativeKeyEvent.VC_ESCAPE && onStopKeyPressed != null) {
+                    onStopKeyPressed.run();
+                }
+            }
+        });
     }
 
     public String getHotkeyText() {
