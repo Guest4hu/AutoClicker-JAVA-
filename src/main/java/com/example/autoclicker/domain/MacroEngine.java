@@ -1,7 +1,7 @@
 package com.example.autoclicker.domain;
 
-import com.example.autoclicker.DTO.MacroPlaybackSettingDTO;
-import com.example.autoclicker.DTO.MacroSettingDTO;
+import com.example.autoclicker.dto.MacroPlaybackSettingDTO;
+import com.example.autoclicker.dto.MacroSettingDTO;
 import com.example.autoclicker.config.NativeKeyConfig;
 import com.example.autoclicker.enums.ActionType;
 

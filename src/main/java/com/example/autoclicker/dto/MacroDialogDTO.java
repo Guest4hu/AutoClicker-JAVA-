@@ -1,4 +1,4 @@
-package com.example.autoclicker.DTO;
+package com.example.autoclicker.dto;
 
 public record MacroDialogDTO(
         String name,

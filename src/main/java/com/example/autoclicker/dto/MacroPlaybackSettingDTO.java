@@ -1,4 +1,4 @@
-package com.example.autoclicker.DTO;
+package com.example.autoclicker.dto;
 
 /**
  * Configuração de reprodução de uma macro: quantas vezes ela deve ser executada

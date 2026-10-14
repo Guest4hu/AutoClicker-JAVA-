@@ -1,4 +1,4 @@
-package com.example.autoclicker.DTO;
+package com.example.autoclicker.dto;
 
 /**
  * Representa uma janela ativa no sistema operacional.

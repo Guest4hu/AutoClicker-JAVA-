@@ -1,6 +1,6 @@
 package com.example.autoclicker.service;
 
-import com.example.autoclicker.DTO.MacroDialogDTO;
+import com.example.autoclicker.dto.MacroDialogDTO;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;

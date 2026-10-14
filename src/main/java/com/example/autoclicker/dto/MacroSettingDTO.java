@@ -1,4 +1,4 @@
-package com.example.autoclicker.DTO;
+package com.example.autoclicker.dto;
 
 import com.example.autoclicker.domain.MacroActionSetting;
 

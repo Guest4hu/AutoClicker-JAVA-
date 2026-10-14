@@ -1,6 +1,6 @@
 package com.example.autoclicker.service;
 
-import com.example.autoclicker.DTO.MacroSettingDTO;
+import com.example.autoclicker.dto.MacroSettingDTO;
 import com.example.autoclicker.config.JacksonConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 

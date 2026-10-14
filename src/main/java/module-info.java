@@ -8,13 +8,13 @@ module com.example.autoclicker {
 
     opens com.example.autoclicker to javafx.fxml;
     opens com.example.autoclicker.controller to javafx.fxml;
-    opens com.example.autoclicker.DTO to com.fasterxml.jackson.databind;
+    opens com.example.autoclicker.dto to com.fasterxml.jackson.databind;
     opens com.example.autoclicker.domain to com.fasterxml.jackson.databind;
     opens com.example.autoclicker.enums to com.fasterxml.jackson.databind;
 
     exports com.example.autoclicker;
     exports com.example.autoclicker.domain;
-    exports com.example.autoclicker.DTO;
+    exports com.example.autoclicker.dto;
     exports com.example.autoclicker.enums;
     exports com.example.autoclicker.input.simulator;
 }

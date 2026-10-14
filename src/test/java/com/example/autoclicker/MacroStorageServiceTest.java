@@ -1,6 +1,6 @@
 package com.example.autoclicker;
 
-import com.example.autoclicker.DTO.MacroSettingDTO;
+import com.example.autoclicker.dto.MacroSettingDTO;
 import com.example.autoclicker.domain.MacroActionSetting;
 import com.example.autoclicker.enums.ActionType;
 import com.example.autoclicker.service.MacroStorageService;

@@ -1,12 +1,12 @@
 package com.example.autoclicker.controller;
 
-import com.example.autoclicker.DTO.MacroSettingDTO;
-import com.example.autoclicker.DTO.WindowInfoDTO;
+import com.example.autoclicker.dto.MacroSettingDTO;
+import com.example.autoclicker.dto.WindowInfoDTO;
 import com.example.autoclicker.config.OperationalSystemConfig;
 import com.example.autoclicker.domain.AutoClickerEngine;
 import com.example.autoclicker.domain.AutoClickerSetting;
 import com.example.autoclicker.domain.MacroEngine;
-import com.example.autoclicker.DTO.MacroPlaybackSettingDTO;
+import com.example.autoclicker.dto.MacroPlaybackSettingDTO;
 import com.example.autoclicker.enums.ClickType;
 import com.example.autoclicker.enums.MouseButton;
 import com.example.autoclicker.enums.StatusState;

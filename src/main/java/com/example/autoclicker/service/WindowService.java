@@ -1,6 +1,6 @@
 package com.example.autoclicker.service;
 
-import com.example.autoclicker.DTO.WindowInfoDTO;
+import com.example.autoclicker.dto.WindowInfoDTO;
 
 import java.util.List;
 
