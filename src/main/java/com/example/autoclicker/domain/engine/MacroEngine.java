@@ -113,7 +113,7 @@ public class MacroEngine extends AbstractEngine {
                 return false;
             }
 
-            if (actionSetting.getActionType() == ActionType.MOUSE) {
+            if (actionSetting.getActionType() == ActionType.MOUSE || actionSetting.getActionType() == ActionType.MOUSE_ARRASTADO) {
                 pressMouse(actionSetting);
             } else if (actionSetting.getActionType() == ActionType.TECLADO) {
                 pressKey(actionSetting);

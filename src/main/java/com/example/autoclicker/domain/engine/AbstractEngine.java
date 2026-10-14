@@ -1,11 +1,11 @@
 package com.example.autoclicker.domain.engine;
 
+import com.example.autoclicker.domain.model.MouseButton;
 import com.example.autoclicker.input.simulator.AwtRobotInputSimulator;
 import com.example.autoclicker.input.simulator.InputSimulator;
 import com.example.autoclicker.input.simulator.VirtualInputSimulator;
 
 import java.awt.GraphicsEnvironment;
-import java.awt.event.InputEvent;
 
 /**
  * Classe base abstrata para os motores de automação do sistema (AutoClicker e Macro).
@@ -169,11 +169,6 @@ public abstract class AbstractEngine {
      * @return Máscara de bits de InputEvent
      */
     protected int translateMouseButton(int buttonMouse) {
-        return switch (buttonMouse) {
-            case 1 -> InputEvent.BUTTON1_DOWN_MASK; // Botão Esquerdo
-            case 2 -> InputEvent.BUTTON3_DOWN_MASK; // Botão Direito (no AWT é BUTTON3)
-            case 3 -> InputEvent.BUTTON2_DOWN_MASK; // Botão do Meio / Scroll
-            default -> InputEvent.BUTTON1_DOWN_MASK;
-        };
+        return MouseButton.toMask(buttonMouse);
     }
 }

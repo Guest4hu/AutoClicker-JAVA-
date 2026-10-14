@@ -213,33 +213,59 @@ public class MacroTabController {
             return;
         }
 
+        MacroPlaybackSettingDTO playback;
         try {
-            MacroPlaybackSettingDTO playback = criarMacroPlaybackSetting();
-            MacroSettingDTO macro = macroStorageService.load(selected);
-            macroLog("Iniciando reprodução da macro: " + selected + " ("
-                    + (playback.infinite() ? "infinito" : playback.repeatCount() + "x")
-                    + ", intervalo " + playback.intervalMillis() + "ms)... [ESC para parar]");
-            runMacroButton.setText("Parar Macro (ESC)");
-            macroCancelledByUser = false;
-
-            macroEngine.setIterationListener(run -> Platform.runLater(() ->
-                    macroLog("Execução #" + run + (playback.infinite() ? "" : " de " + playback.repeatCount()))
-            ));
-
-            macroEngine.setFinishListener(() -> Platform.runLater(() -> {
-                runMacroButton.setText("Executar Macro Selecionada");
-                if (!macroCancelledByUser) {
-                    macroLog("Macro '" + selected + "' finalizada com sucesso!");
-                }
-            }));
-
-            // Passa a configuração de playback (resolvendo o bug funcional P-01)
-            macroEngine.startMacro(macro, playback);
-
-        } catch (Exception e) {
-            macroLog("Erro ao executar macro: " + e.getMessage());
-            runMacroButton.setText("Executar Macro Selecionada");
+            playback = criarMacroPlaybackSetting();
+        } catch (NumberFormatException e) {
+            macroLog("Erro: valores numéricos inválidos nas configurações de repetição.");
+            return;
         }
+
+        runMacroButton.setDisable(true);
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                return macroStorageService.load(selected);
+            } catch (IOException e) {
+                throw new RuntimeException("Falha ao ler arquivo: " + e.getMessage(), e);
+            }
+        }).thenAccept(macro -> Platform.runLater(() -> {
+            runMacroButton.setDisable(false);
+            if (macroEngine.isMacroRunning()) {
+                return;
+            }
+            try {
+                macroLog("Iniciando reprodução da macro: " + selected + " ("
+                        + (playback.infinite() ? "infinito" : playback.repeatCount() + "x")
+                        + ", intervalo " + playback.intervalMillis() + "ms)... [ESC para parar]");
+                runMacroButton.setText("Parar Macro (ESC)");
+                macroCancelledByUser = false;
+
+                macroEngine.setIterationListener(run -> Platform.runLater(() ->
+                        macroLog("Execução #" + run + (playback.infinite() ? "" : " de " + playback.repeatCount()))
+                ));
+
+                macroEngine.setFinishListener(() -> Platform.runLater(() -> {
+                    runMacroButton.setText("Executar Macro Selecionada");
+                    if (!macroCancelledByUser) {
+                        macroLog("Macro '" + selected + "' finalizada com sucesso!");
+                    }
+                }));
+
+                // Passa a configuração de playback (resolvendo o bug funcional P-01)
+                macroEngine.startMacro(macro, playback);
+
+            } catch (Exception e) {
+                macroLog("Erro ao executar macro: " + e.getMessage());
+                runMacroButton.setText("Executar Macro Selecionada");
+            }
+        })).exceptionally(ex -> {
+            Platform.runLater(() -> {
+                runMacroButton.setDisable(false);
+                runMacroButton.setText("Executar Macro Selecionada");
+                macroLog("Erro ao carregar macro para execução: " + (ex.getCause() != null ? ex.getCause().getMessage() : ex.getMessage()));
+            });
+            return null;
+        });
     }
 
     /**

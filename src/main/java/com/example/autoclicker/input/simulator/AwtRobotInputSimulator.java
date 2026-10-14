@@ -15,7 +15,7 @@ public class AwtRobotInputSimulator implements InputSimulator {
     public AwtRobotInputSimulator() {
         try {
             this.robot = new Robot();
-        } catch (AWTException e) {
+        } catch (AWTException | java.awt.HeadlessException e) {
             throw new IllegalStateException("Falha ao inicializar o Robot do AWT: " + e.getMessage(), e);
         }
     }

@@ -1,20 +1,36 @@
 package com.example.autoclicker.domain.model;
 
 import com.example.autoclicker.input.hotkey.HotkeyService;
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Representa um evento atômico de entrada gravado em uma macro (tecla ou ação de mouse).
  * Segue a convenção canônica JavaBean para compatibilidade com Jackson.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class MacroActionSetting {
 
     private ActionType actionType;
     private Integer key;
     private long keyPressed;
     private long keyReleased;
+
+    @JsonProperty("yBefore")
+    @JsonAlias({"ybefore", "yBefore"})
     private int yBefore;
+
+    @JsonProperty("xBefore")
+    @JsonAlias({"xbefore", "xBefore"})
     private int xBefore;
+
+    @JsonProperty("yAfter")
+    @JsonAlias({"yafter", "yAfter"})
     private int yAfter;
+
+    @JsonProperty("xAfter")
+    @JsonAlias({"xafter", "xAfter"})
     private int xAfter;
 
     public MacroActionSetting() {
@@ -70,6 +86,7 @@ public class MacroActionSetting {
 
     // --- Coordenadas Iniciais ---
 
+    @JsonProperty("yBefore")
     public int getYBefore() {
         return yBefore;
     }
@@ -78,6 +95,7 @@ public class MacroActionSetting {
         this.yBefore = yBefore;
     }
 
+    @JsonProperty("xBefore")
     public int getXBefore() {
         return xBefore;
     }
@@ -88,6 +106,7 @@ public class MacroActionSetting {
 
     // --- Coordenadas Finais ---
 
+    @JsonProperty("yAfter")
     public int getYAfter() {
         return yAfter;
     }
@@ -96,6 +115,7 @@ public class MacroActionSetting {
         this.yAfter = yAfter;
     }
 
+    @JsonProperty("xAfter")
     public int getXAfter() {
         return xAfter;
     }
@@ -114,7 +134,7 @@ public class MacroActionSetting {
             return String.format("[+%6.3fs] TECLADO  | Tecla: %-12s | Duração: %4d ms", inicioSegundos, "[" + nomeTecla + "]", duracao);
         }
 
-        if (actionType == ActionType.MOUSE) {
+        if (actionType == ActionType.MOUSE || actionType == ActionType.MOUSE_ARRASTADO) {
             String botao = switch (key != null ? key : 0) {
                 case 1 -> "Esquerdo";
                 case 2 -> "Direito";
@@ -122,7 +142,7 @@ public class MacroActionSetting {
                 default -> "Botão " + key;
             };
 
-            boolean isDrag = (xBefore != xAfter || yBefore != yAfter);
+            boolean isDrag = (actionType == ActionType.MOUSE_ARRASTADO || xBefore != xAfter || yBefore != yAfter);
             if (isDrag) {
                 return String.format("[+%6.3fs] ARRASTAR | %-12s de (%4d, %4d) até (%4d, %4d) | Duração: %4d ms",
                         inicioSegundos, botao, xBefore, yBefore, xAfter, yAfter, duracao);

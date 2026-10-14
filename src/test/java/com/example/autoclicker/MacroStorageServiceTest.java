@@ -91,4 +91,39 @@ class MacroStorageServiceTest {
         assertEquals(2, settings.size());
         assertEquals(List.of("alpha", "beta"), settings);
     }
+
+    @Test
+    void testLoadExistingPreRefactorJsonFiles() throws IOException {
+        MacroStorageService realStorage = new MacroStorageService();
+
+        if (realStorage.existeTalArquivo("dadada")) {
+            MacroSettingDTO dto = realStorage.load("dadada");
+            assertNotNull(dto);
+            assertEquals("dadada", dto.name());
+            assertFalse(dto.configs().isEmpty());
+            MacroActionSetting first = dto.configs().get(0);
+            assertEquals(1080, first.getXBefore());
+            assertEquals(233, first.getYBefore());
+        }
+
+        if (realStorage.existeTalArquivo("laele")) {
+            MacroSettingDTO dto = realStorage.load("laele");
+            assertNotNull(dto);
+            assertEquals("Laele", dto.name());
+            assertFalse(dto.configs().isEmpty());
+            MacroActionSetting first = dto.configs().get(0);
+            assertEquals(545, first.getXBefore());
+            assertEquals(954, first.getYBefore());
+        }
+
+        if (realStorage.existeTalArquivo("testemacrooff")) {
+            MacroSettingDTO dto = realStorage.load("testemacrooff");
+            assertNotNull(dto);
+            assertEquals("TEsteMacroOff", dto.name());
+            assertFalse(dto.configs().isEmpty());
+            MacroActionSetting first = dto.configs().get(0);
+            assertEquals(1044, first.getXBefore());
+            assertEquals(217, first.getYBefore());
+        }
+    }
 }

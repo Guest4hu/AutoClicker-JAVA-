@@ -61,4 +61,17 @@ class AutoClickerSettingTest {
         assertTrue(errors.stream().anyMatch(e -> e.contains("Atraso")));
         assertTrue(errors.stream().anyMatch(e -> e.contains("Quantidade")));
     }
+
+    @Test
+    void testEnumsValuesAndMasks() {
+        assertEquals(1, ClickType.SIMPLES.getClickMultiplier());
+        assertEquals(2, ClickType.DUPLO.getClickMultiplier());
+        assertEquals(ClickType.SIMPLES.getClickMultiplier(), ClickType.SIMPLES.getLabel());
+
+        assertEquals(MouseButton.ESQUERDO.getMask(), MouseButton.toMask(1));
+        assertEquals(MouseButton.DIREITO.getMask(), MouseButton.toMask(2));
+        assertEquals(MouseButton.MEIO.getMask(), MouseButton.toMask(3));
+        assertEquals(MouseButton.ESQUERDO.getMask(), MouseButton.toMask(99)); // Fallback
+        assertEquals(MouseButton.ESQUERDO.getMask(), MouseButton.ESQUERDO.getLabel());
+    }
 }

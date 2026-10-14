@@ -25,6 +25,15 @@ public enum MouseButton {
         return mask;
     }
 
+    public static int toMask(int buttonNumber) {
+        return switch (buttonNumber) {
+            case 1 -> ESQUERDO.getMask();
+            case 2 -> DIREITO.getMask();
+            case 3 -> MEIO.getMask();
+            default -> ESQUERDO.getMask();
+        };
+    }
+
     @Deprecated
     public int getLabel() {
         return getMask();

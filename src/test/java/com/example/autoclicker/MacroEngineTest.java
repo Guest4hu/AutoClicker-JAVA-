@@ -141,4 +141,31 @@ class MacroEngineTest {
                 new MacroSettingDTO("Name", "desc", LocalDateTime.now(), null)
         );
     }
+
+    @Test
+    void testMouseDragMacroExecution() throws Exception {
+        MacroActionSetting dragAction = new MacroActionSetting(ActionType.MOUSE_ARRASTADO, 1, 0, 10, 10);
+        dragAction.setXAfter(100);
+        dragAction.setYAfter(100);
+        dragAction.setKeyReleased(20);
+
+        MacroSettingDTO macro = new MacroSettingDTO(
+                "DragMacro",
+                "Description",
+                LocalDateTime.now(),
+                List.of(dragAction)
+        );
+
+        CountDownLatch latch = new CountDownLatch(1);
+        engine.setFinishListener(latch::countDown);
+
+        engine.startMacro(macro);
+
+        boolean finished = latch.await(2, TimeUnit.SECONDS);
+        assertTrue(finished, "A macro de arrastar deve finalizar");
+        assertEquals(1, simulator.getMousePressCount());
+        assertEquals(1, simulator.getMouseReleaseCount());
+        assertEquals(100, simulator.getCurrentX());
+        assertEquals(100, simulator.getCurrentY());
+    }
 }
