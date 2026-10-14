@@ -1,9 +1,13 @@
-package com.example.autoclicker.domain;
+package com.example.autoclicker.domain.model;
 
-import com.example.autoclicker.enums.ActionType;
-import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
+import com.example.autoclicker.input.hotkey.HotkeyService;
 
+/**
+ * Representa um evento atômico de entrada gravado em uma macro (tecla ou ação de mouse).
+ * Segue a convenção canônica JavaBean para compatibilidade com Jackson.
+ */
 public class MacroActionSetting {
+
     private ActionType actionType;
     private Integer key;
     private long keyPressed;
@@ -12,6 +16,9 @@ public class MacroActionSetting {
     private int xBefore;
     private int yAfter;
     private int xAfter;
+
+    public MacroActionSetting() {
+    }
 
     public MacroActionSetting(ActionType actionType, Integer key, long milliseconds) {
         this.actionType = actionType;
@@ -27,9 +34,6 @@ public class MacroActionSetting {
         this.xBefore = x;
         this.yAfter = y;
         this.xAfter = x;
-    }
-
-    public MacroActionSetting() {
     }
 
     public ActionType getActionType() {
@@ -106,7 +110,7 @@ public class MacroActionSetting {
         double inicioSegundos = keyPressed / 1000.0;
 
         if (actionType == ActionType.TECLADO) {
-            String nomeTecla = (key != null) ? com.example.autoclicker.service.HotkeyService.formatKeyText(key) : "Desconhecida";
+            String nomeTecla = (key != null) ? HotkeyService.formatKeyText(key) : "Desconhecida";
             return String.format("[+%6.3fs] TECLADO  | Tecla: %-12s | Duração: %4d ms", inicioSegundos, "[" + nomeTecla + "]", duracao);
         }
 

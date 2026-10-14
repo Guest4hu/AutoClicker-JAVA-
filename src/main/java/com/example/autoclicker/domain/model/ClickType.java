@@ -1,5 +1,8 @@
-package com.example.autoclicker.enums;
+package com.example.autoclicker.domain.model;
 
+/**
+ * Define a modalidade de clique efetuada pelo AutoClicker (simples ou duplo).
+ */
 public enum ClickType {
     SIMPLES(1, "Clique Simples"),
     DUPLO(2, "Clique Duplo");
@@ -12,6 +15,9 @@ public enum ClickType {
         this.displayName = displayName;
     }
 
+    /**
+     * Retorna a quantidade de cliques disparados por acionamento.
+     */
     public int getClickMultiplier() {
         return clickMultiplier;
     }

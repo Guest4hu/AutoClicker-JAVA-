@@ -1,10 +1,10 @@
 package com.example.autoclicker;
 
+import com.example.autoclicker.domain.engine.MacroEngine;
+import com.example.autoclicker.domain.model.ActionType;
+import com.example.autoclicker.domain.model.MacroActionSetting;
 import com.example.autoclicker.dto.MacroPlaybackSettingDTO;
 import com.example.autoclicker.dto.MacroSettingDTO;
-import com.example.autoclicker.domain.MacroActionSetting;
-import com.example.autoclicker.domain.MacroEngine;
-import com.example.autoclicker.enums.ActionType;
 import com.example.autoclicker.input.simulator.VirtualInputSimulator;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import org.junit.jupiter.api.AfterEach;
@@ -22,16 +22,19 @@ import static org.junit.jupiter.api.Assertions.*;
 class MacroEngineTest {
 
     private VirtualInputSimulator simulator;
+    private MacroEngine engine;
 
     @BeforeEach
     void setUp() {
         simulator = new VirtualInputSimulator();
-        MacroEngine.setSimulator(simulator);
+        engine = new MacroEngine(simulator);
     }
 
     @AfterEach
     void tearDown() {
-        MacroEngine.stopMacro();
+        if (engine != null) {
+            engine.stopMacro();
+        }
     }
 
     @Test
@@ -50,13 +53,13 @@ class MacroEngineTest {
         );
 
         CountDownLatch latch = new CountDownLatch(1);
-        MacroEngine.getInstance().setFinishListener(latch::countDown);
+        engine.setFinishListener(latch::countDown);
 
-        MacroEngine.startMacro(macro);
+        engine.startMacro(macro);
 
         boolean finished = latch.await(2, TimeUnit.SECONDS);
         assertTrue(finished, "A macro simples deve finalizar dentro do tempo limite");
-        assertFalse(MacroEngine.isMacroRunning());
+        assertFalse(engine.isMacroRunning());
 
         assertEquals(1, simulator.getMousePressCount());
         assertEquals(1, simulator.getMouseReleaseCount());
@@ -82,15 +85,15 @@ class MacroEngineTest {
         AtomicInteger iterationCount = new AtomicInteger(0);
         CountDownLatch finishLatch = new CountDownLatch(1);
 
-        MacroEngine.getInstance().setIterationListener(iterationCount::set);
-        MacroEngine.getInstance().setFinishListener(finishLatch::countDown);
+        engine.setIterationListener(iterationCount::set);
+        engine.setFinishListener(finishLatch::countDown);
 
         MacroPlaybackSettingDTO playback = MacroPlaybackSettingDTO.limitedRuns(targetRuns, 5);
-        MacroEngine.startMacro(macro, playback);
+        engine.startMacro(macro, playback);
 
         boolean finished = finishLatch.await(2, TimeUnit.SECONDS);
         assertTrue(finished, "A macro repetida deve finalizar dentro do tempo limite");
-        assertFalse(MacroEngine.isMacroRunning());
+        assertFalse(engine.isMacroRunning());
 
         assertEquals(targetRuns, iterationCount.get());
         assertEquals(targetRuns, simulator.getMousePressCount());
@@ -110,23 +113,22 @@ class MacroEngineTest {
         );
 
         CountDownLatch firstRunLatch = new CountDownLatch(1);
-        MacroEngine.getInstance().setIterationListener(run -> firstRunLatch.countDown());
+        engine.setIterationListener(run -> firstRunLatch.countDown());
 
         MacroPlaybackSettingDTO playback = MacroPlaybackSettingDTO.infiniteRuns(5);
-        MacroEngine.startMacro(macro, playback);
+        engine.startMacro(macro, playback);
 
         assertTrue(firstRunLatch.await(1, TimeUnit.SECONDS), "Primeira iteração deve começar");
-        assertTrue(MacroEngine.isMacroRunning());
+        assertTrue(engine.isMacroRunning());
 
-        MacroEngine.stopMacro();
+        engine.stopMacro();
 
-        // Aguarda parar
         long deadline = System.currentTimeMillis() + 1000;
-        while (MacroEngine.isMacroRunning() && System.currentTimeMillis() < deadline) {
+        while (engine.isMacroRunning() && System.currentTimeMillis() < deadline) {
             Thread.sleep(10);
         }
 
-        assertFalse(MacroEngine.isMacroRunning(), "A macro deve parar após stopMacro");
+        assertFalse(engine.isMacroRunning(), "A macro deve parar após stopMacro");
     }
 
     @Test

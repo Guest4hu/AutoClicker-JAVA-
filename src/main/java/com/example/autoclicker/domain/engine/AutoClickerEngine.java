@@ -1,19 +1,24 @@
-package com.example.autoclicker.domain;
+package com.example.autoclicker.domain.engine;
 
+import com.example.autoclicker.domain.model.AutoClickerSetting;
 import com.example.autoclicker.input.simulator.InputSimulator;
+
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Motor de domínio para execução de sequências de cliques automatizados (finitos ou contínuos).
+ * Objeto de instância puro, sem dependências de estado global ou singletons.
+ */
 public class AutoClickerEngine extends AbstractEngine {
 
     private static final Logger LOGGER = Logger.getLogger(AutoClickerEngine.class.getName());
-    private static final AutoClickerEngine INSTANCE = new AutoClickerEngine();
 
-    private static AutoClickerSetting setting;
-    private static Consumer<Integer> progressListener;
-    private static final AtomicInteger totalClicksCounter = new AtomicInteger(0);
+    private AutoClickerSetting setting;
+    private Consumer<Integer> progressListener;
+    private final AtomicInteger totalClicksCounter = new AtomicInteger(0);
     private volatile boolean isMousePressed = false;
 
     public AutoClickerEngine() {
@@ -24,58 +29,41 @@ public class AutoClickerEngine extends AbstractEngine {
         super(inputSimulator);
     }
 
-    public static AutoClickerEngine getInstance() {
-        return INSTANCE;
+    public AutoClickerSetting getSetting() {
+        return setting;
     }
 
-    public static void setSimulator(InputSimulator simulator) {
-        INSTANCE.setInputSimulator(simulator);
+    public synchronized void setSetting(AutoClickerSetting setting) {
+        this.setting = setting;
     }
 
-    // --- Métodos Estáticos (Fachada para compatibilidade com o Controller) ---
-
-    public static void setProgressListener(Consumer<Integer> listener) {
-        progressListener = listener;
+    public void setProgressListener(Consumer<Integer> progressListener) {
+        this.progressListener = progressListener;
     }
 
-    @Override
-    public void setFinishListener(Runnable listener) {
-        super.setFinishListener(listener);
-        if (this != INSTANCE) {
-            INSTANCE.setFinishListener(listener);
-        }
-    }
-
-    public static int getTotalClicks() {
+    public int getTotalClicks() {
         return totalClicksCounter.get();
     }
 
-    public static synchronized void startAutoClicker() {
+    /**
+     * Inicia o ciclo de cliques com base nas configurações vigentes.
+     *
+     * @throws IllegalStateException se as configurações não tiverem sido definidas
+     */
+    public synchronized void startAutoClicker() {
         if (setting == null) {
             throw new IllegalStateException("Configurações do AutoClicker não definidas.");
         }
         totalClicksCounter.set(0);
-        INSTANCE.start("auto-clicker-worker");
+        start("auto-clicker-worker");
     }
 
-    public static synchronized void stopAutoClicker() {
-        INSTANCE.stop();
+    /**
+     * Solicita a interrupção da execução do AutoClicker e libera o mouse se pressionado.
+     */
+    public synchronized void stopAutoClicker() {
+        stop();
     }
-
-    public static AutoClickerSetting getSetting() {
-        return setting;
-    }
-
-    public static synchronized void setSetting(AutoClickerSetting newSetting) {
-        setting = newSetting;
-    }
-
-    @Override
-    public boolean isRunning() {
-        return super.isRunning() || INSTANCE.running;
-    }
-
-    // --- Implementação do Template Method ---
 
     @Override
     protected void execute() {
@@ -95,8 +83,9 @@ public class AutoClickerEngine extends AbstractEngine {
         releaseMouseSafely();
     }
 
-    // --- Lógica Interna de Automação ---
-
+    /**
+     * Loop unificado de cliques com compensação de deriva temporal e proteção contra travamento/lag spike.
+     */
     private void runClickLoop() {
         boolean infinite = setting.isInfiniteClick();
         int remainingClicks = setting.getClickCount();
@@ -114,7 +103,7 @@ public class AutoClickerEngine extends AbstractEngine {
                 targetTimeNanos += intervalNanos;
                 long now = System.nanoTime();
 
-                // Proteção contra lag spike: se atrasou mais de 1 ciclo, reseta o alvo
+                // Proteção contra lag spike: reseta a janela temporal se atrasar mais de um ciclo
                 if (targetTimeNanos < now - intervalNanos) {
                     targetTimeNanos = now;
                 }
@@ -130,10 +119,8 @@ public class AutoClickerEngine extends AbstractEngine {
         int totalClicks = setting.getClickType().getClickMultiplier();
         int mouseMask = setting.getMouseButton().getMask();
 
-        // 5 milissegundos em nanossegundos (padrão ideal para jogos registrarem o clique)
-        long defaultHoldNanos = 5_000_000L;
+        long defaultHoldNanos = 5_000_000L; // 5ms de acionamento ideal
         long intervalNanos = (long) setting.getInterval() * 1_000_000L;
-        // Trava de segurança: nunca segurar por mais da metade do tempo do intervalo total
         long maxHoldNanos = Math.max(100_000L, intervalNanos / 2);
         long holdNanos = Math.min(defaultHoldNanos, maxHoldNanos);
 
@@ -144,7 +131,6 @@ public class AutoClickerEngine extends AbstractEngine {
             inputSimulator.mouseRelease(mouseMask);
             isMousePressed = false;
 
-            // Se for clique duplo, dá uma pequena folga antes do segundo clique
             if (i < totalClicks - 1 && running) {
                 sleepUntil(System.nanoTime() + holdNanos);
             }
@@ -161,7 +147,7 @@ public class AutoClickerEngine extends AbstractEngine {
             try {
                 inputSimulator.mouseRelease(setting.getMouseButton().getMask());
             } catch (Exception e) {
-                LOGGER.log(Level.FINE, "Erro ao liberar mouse durante limpeza", e);
+                LOGGER.log(Level.FINE, "Erro ao liberar botão do mouse na limpeza", e);
             } finally {
                 isMousePressed = false;
             }

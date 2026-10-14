@@ -1,7 +1,5 @@
 package com.example.autoclicker.input.simulator;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -11,14 +9,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Não interage com periféricos físicos do sistema operacional e registra chamadas para asserções em testes.
  */
 public class VirtualInputSimulator implements InputSimulator {
-
-    public enum EventType {
-        MOUSE_MOVE,
-        MOUSE_PRESS,
-        MOUSE_RELEASE,
-        KEY_PRESS,
-        KEY_RELEASE
-    }
 
     public record InputEventRecord(EventType type, int param1, int param2) {}
 
@@ -62,7 +52,7 @@ public class VirtualInputSimulator implements InputSimulator {
     }
 
     public List<InputEventRecord> getEvents() {
-        return Collections.unmodifiableList(new ArrayList<>(events));
+        return List.copyOf(events);
     }
 
     public int getMousePressCount() {

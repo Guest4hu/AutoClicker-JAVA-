@@ -1,4 +1,4 @@
-package com.example.autoclicker.service;
+package com.example.autoclicker.input.window;
 
 import com.example.autoclicker.dto.WindowInfoDTO;
 
@@ -7,7 +7,12 @@ import java.lang.invoke.MethodHandle;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Implementação para servidores gráficos Linux X11 utilizando a Foreign Function & Memory API (Panama FFM).
+ * Acessa diretamente a biblioteca nativa libX11.so.6 para consultar propriedades EWMH das janelas ativas.
+ */
 public class LinuxX11WindowService implements WindowService {
+
     private static final MethodHandle X_OPEN_DISPLAY;
     private static final MethodHandle X_CLOSE_DISPLAY;
     private static final MethodHandle X_DEFAULT_ROOT_WINDOWS;
@@ -16,6 +21,7 @@ public class LinuxX11WindowService implements WindowService {
     private static final MethodHandle X_FETCH_NAME;
     private static final MethodHandle X_FREE;
     private static final boolean INITIALIZED;
+
     static {
         boolean success = false;
         MethodHandle open = null;
@@ -31,7 +37,7 @@ public class LinuxX11WindowService implements WindowService {
 
             open = linker.downcallHandle(
                     x11.find("XOpenDisplay").orElseThrow(),
-                    FunctionDescriptor.of(ValueLayout.ADDRESS,ValueLayout.ADDRESS)
+                    FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS)
             );
 
             close = linker.downcallHandle(
@@ -41,27 +47,29 @@ public class LinuxX11WindowService implements WindowService {
 
             root = linker.downcallHandle(
                     x11.find("XDefaultRootWindow").orElseThrow(),
-                    FunctionDescriptor.of(ValueLayout.JAVA_LONG,ValueLayout.ADDRESS)
+                    FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)
             );
             internAtom = linker.downcallHandle(
                     x11.find("XInternAtom").orElseThrow(),
-                    FunctionDescriptor.of(ValueLayout.JAVA_LONG,ValueLayout.ADDRESS,ValueLayout.ADDRESS,ValueLayout.JAVA_INT)
+                    FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT)
             );
             getProp = linker.downcallHandle(
                     x11.find("XGetWindowProperty").orElseThrow(),
-                    FunctionDescriptor.of(ValueLayout.JAVA_INT,ValueLayout.ADDRESS,ValueLayout.JAVA_LONG,ValueLayout.JAVA_LONG,ValueLayout.JAVA_LONG,ValueLayout.JAVA_LONG,ValueLayout.JAVA_INT,ValueLayout.JAVA_LONG,ValueLayout.ADDRESS,ValueLayout.ADDRESS,ValueLayout.ADDRESS,ValueLayout.ADDRESS,ValueLayout.ADDRESS)
+                    FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG,
+                            ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG,
+                            ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS)
             );
             fetchName = linker.downcallHandle(
                     x11.find("XFetchName").orElseThrow(),
-                    FunctionDescriptor.of(ValueLayout.JAVA_INT,ValueLayout.ADDRESS,ValueLayout.JAVA_LONG,ValueLayout.ADDRESS)
+                    FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)
             );
             free = linker.downcallHandle(
                     x11.find("XFree").orElseThrow(),
                     FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)
             );
             success = true;
-        } catch (Exception e) {
-            System.err.println("LinuxX11WindowService failed to load XOpenDisplay " + e.getMessage());
+        } catch (Throwable e) {
+            System.err.println("LinuxX11WindowService: falha ao carregar libX11.so.6: " + e.getMessage());
         }
         X_OPEN_DISPLAY = open;
         X_CLOSE_DISPLAY = close;
@@ -73,12 +81,10 @@ public class LinuxX11WindowService implements WindowService {
         INITIALIZED = success;
     }
 
-
     @Override
     public List<WindowInfoDTO> getOpenWindows() {
         if (!INITIALIZED) {
-            return List.of(
-            );
+            return List.of();
         }
         MemorySegment display;
         try {
@@ -93,7 +99,7 @@ public class LinuxX11WindowService implements WindowService {
         try (Arena arena = Arena.ofConfined()) {
             long rootWindow = (long) X_DEFAULT_ROOT_WINDOWS.invokeExact(display);
 
-            // Atoms padrão
+            // Atoms padrão EWMH
             MemorySegment clientListAtomName = arena.allocateFrom("_NET_CLIENT_LIST");
             long clientListAtom = (long) X_INTERN_ATOM.invokeExact(display, clientListAtomName, 0);
 
@@ -167,6 +173,4 @@ public class LinuxX11WindowService implements WindowService {
         }
         return windows;
     }
-
-
 }

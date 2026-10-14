@@ -1,7 +1,7 @@
-package com.example.autoclicker.service;
+package com.example.autoclicker.input.macro;
 
-import com.example.autoclicker.domain.MacroActionSetting;
-import com.example.autoclicker.enums.ActionType;
+import com.example.autoclicker.domain.model.ActionType;
+import com.example.autoclicker.domain.model.MacroActionSetting;
 import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
@@ -15,6 +15,10 @@ import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Serviço responsável pela captura e gravação de eventos nativos de mouse e teclado via JNativeHook.
+ * Garante thread-safety na inserção e consulta concorrente das ações capturadas pelas threads do SO.
+ */
 public class MacroService {
 
     private static final Logger LOGGER = Logger.getLogger(MacroService.class.getName());
@@ -24,8 +28,12 @@ public class MacroService {
     private NativeMouseListener currentMouseListener;
     private volatile boolean capturing = false;
 
+    /**
+     * Inicia a gravação de ações do usuário. A tecla ESC finaliza a gravação.
+     *
+     * @param onFinished Callback executado ao término da gravação
+     */
     public synchronized void captureMacro(Runnable onFinished) {
-        // Se já estiver capturando, desregistra listeners anteriores
         stopCapture();
 
         macroActions.clear();
@@ -36,10 +44,9 @@ public class MacroService {
         NativeKeyListener keyListener = new NativeKeyListener() {
             @Override
             public void nativeKeyPressed(NativeKeyEvent e) {
-                // Se a tecla for ESC, encerra e salva as ações gravadas
+                // Tecla ESC finaliza e consolida as ações gravadas
                 if (e.getKeyCode() == NativeKeyEvent.VC_ESCAPE) {
                     long now = System.currentTimeMillis() - currentTimeMilli;
-                    // Fecha qualquer ação que tenha ficado sem release
                     synchronized (macroActionsTemp) {
                         for (MacroActionSetting a : macroActionsTemp) {
                             if (a.getKeyReleased() <= 0) {
@@ -69,7 +76,6 @@ public class MacroService {
             @Override
             public void nativeKeyReleased(NativeKeyEvent e) {
                 long now = System.currentTimeMillis() - currentTimeMilli;
-                // Procura de trás para frente a ação de teclado correspondente que ainda não foi solta
                 synchronized (macroActionsTemp) {
                     for (int i = macroActionsTemp.size() - 1; i >= 0; i--) {
                         MacroActionSetting a = macroActionsTemp.get(i);
@@ -99,7 +105,6 @@ public class MacroService {
             @Override
             public void nativeMouseReleased(NativeMouseEvent nativeEvent) {
                 long now = System.currentTimeMillis() - currentTimeMilli;
-                // Procura de trás para frente a ação de mouse correspondente ao botão solto
                 synchronized (macroActionsTemp) {
                     for (int i = macroActionsTemp.size() - 1; i >= 0; i--) {
                         MacroActionSetting a = macroActionsTemp.get(i);
@@ -122,6 +127,9 @@ public class MacroService {
         GlobalScreen.addNativeMouseListener(mouseListener);
     }
 
+    /**
+     * Interrompe a captura ativa e remove com segurança os ouvintes do JNativeHook.
+     */
     public synchronized void stopCapture() {
         capturing = false;
         if (currentKeyListener != null) {
@@ -146,17 +154,20 @@ public class MacroService {
         return capturing;
     }
 
+    /**
+     * Retorna uma cópia defensiva das ações gravadas.
+     */
     public List<MacroActionSetting> getMacroActions() {
         synchronized (macroActions) {
             return new ArrayList<>(macroActions);
         }
     }
 
-    public void setMacroActions(List<MacroActionSetting> macroActions) {
+    public void setMacroActions(List<MacroActionSetting> actions) {
         synchronized (this.macroActions) {
             this.macroActions.clear();
-            if (macroActions != null) {
-                this.macroActions.addAll(macroActions);
+            if (actions != null) {
+                this.macroActions.addAll(actions);
             }
         }
     }

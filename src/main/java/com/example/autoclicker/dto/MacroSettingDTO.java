@@ -1,10 +1,13 @@
 package com.example.autoclicker.dto;
 
-import com.example.autoclicker.domain.MacroActionSetting;
+import com.example.autoclicker.domain.model.MacroActionSetting;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * DTO imutável para transporte e persistência de dados de uma macro gravada.
+ */
 public record MacroSettingDTO(
         String name,
         String description,

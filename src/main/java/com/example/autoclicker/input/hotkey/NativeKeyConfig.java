@@ -1,4 +1,4 @@
-package com.example.autoclicker.config;
+package com.example.autoclicker.input.hotkey;
 
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 
@@ -7,7 +7,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Tabela de mapeamento estático entre os keycodes nativos do JNativeHook e os códigos virtuais do AWT KeyEvent.
+ */
 public class NativeKeyConfig {
+
     private static final Map<Integer, Integer> KEY_MAP = new HashMap<>();
 
     static {

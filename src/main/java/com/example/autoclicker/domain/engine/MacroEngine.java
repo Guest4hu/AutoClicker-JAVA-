@@ -1,17 +1,24 @@
-package com.example.autoclicker.domain;
+package com.example.autoclicker.domain.engine;
 
+import com.example.autoclicker.domain.model.ActionType;
+import com.example.autoclicker.domain.model.MacroActionSetting;
 import com.example.autoclicker.dto.MacroPlaybackSettingDTO;
 import com.example.autoclicker.dto.MacroSettingDTO;
-import com.example.autoclicker.config.NativeKeyConfig;
-import com.example.autoclicker.enums.ActionType;
-
+import com.example.autoclicker.input.hotkey.NativeKeyConfig;
 import com.example.autoclicker.input.simulator.InputSimulator;
+
 import java.awt.event.KeyEvent;
 import java.util.function.IntConsumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+/**
+ * Motor de domínio para reprodução de macros gravadas (sequências cronometradas de teclado e mouse).
+ * Objeto de instância puro, desacoplado de singletons globais e de hardware AWT direto.
+ */
 public class MacroEngine extends AbstractEngine {
 
-    private static final MacroEngine INSTANCE = new MacroEngine();
+    private static final Logger LOGGER = Logger.getLogger(MacroEngine.class.getName());
 
     private MacroSettingDTO currentMacro;
     private MacroPlaybackSettingDTO currentPlayback = MacroPlaybackSettingDTO.once();
@@ -27,57 +34,41 @@ public class MacroEngine extends AbstractEngine {
         super(inputSimulator);
     }
 
-    public static MacroEngine getInstance() {
-        return INSTANCE;
-    }
-
-    public static void setSimulator(InputSimulator simulator) {
-        INSTANCE.setInputSimulator(simulator);
-    }
-
-    // --- Métodos Estáticos (Fachada para facilidade de uso) ---
-
-    public static synchronized void startMacro(MacroSettingDTO macroActionDto) {
-        INSTANCE.startWith(macroActionDto, MacroPlaybackSettingDTO.once());
-    }
-
-    public static synchronized void startMacro(MacroSettingDTO macroActionDto, MacroPlaybackSettingDTO playbackSetting) {
-        INSTANCE.startWith(macroActionDto, playbackSetting);
-    }
-
-    public static synchronized void stopMacro() {
-        INSTANCE.stop();
-    }
-
-    public void setFinishListener(Runnable listener) {
-        INSTANCE.finishListener = listener;
+    /**
+     * Inicia a reprodução de uma macro em execução única (once).
+     */
+    public synchronized void startMacro(MacroSettingDTO macro) {
+        startMacro(macro, MacroPlaybackSettingDTO.once());
     }
 
     /**
-     * Registra um ouvinte notificado no início de cada execução da macro.
-     * Recebe o número da execução atual (começando em 1).
+     * Inicia a reprodução de uma macro respeitando as configurações de repetição e intervalo.
      */
-    public void setIterationListener(IntConsumer listener) {
-        INSTANCE.iterationListener = listener;
-    }
-
-    public static boolean isMacroRunning() {
-        return INSTANCE.isRunning();
-    }
-
-    // --- Métodos de Instância ---
-
-    public synchronized void startWith(MacroSettingDTO macroActionDto) {
-        startWith(macroActionDto, MacroPlaybackSettingDTO.once());
-    }
-
-    public synchronized void startWith(MacroSettingDTO macroActionDto, MacroPlaybackSettingDTO playbackSetting) {
-        if (macroActionDto == null || macroActionDto.configs() == null || macroActionDto.configs().isEmpty()) {
+    public synchronized void startMacro(MacroSettingDTO macro, MacroPlaybackSettingDTO playbackSetting) {
+        if (macro == null || macro.configs() == null || macro.configs().isEmpty()) {
             throw new IllegalStateException("Nenhuma ação gravada para executar.");
         }
-        this.currentMacro = macroActionDto;
+        this.currentMacro = macro;
         this.currentPlayback = (playbackSetting != null) ? playbackSetting : MacroPlaybackSettingDTO.once();
         start("macro-clicker");
+    }
+
+    /**
+     * Interrompe a execução ativa da macro.
+     */
+    public synchronized void stopMacro() {
+        stop();
+    }
+
+    public boolean isMacroRunning() {
+        return isRunning();
+    }
+
+    /**
+     * Registra ouvinte notificado no início de cada execução da macro (ciclo de repetição).
+     */
+    public void setIterationListener(IntConsumer listener) {
+        this.iterationListener = listener;
     }
 
     @Override
@@ -96,7 +87,7 @@ public class MacroEngine extends AbstractEngine {
             }
             completedRuns++;
 
-            // Só espera o intervalo se ainda houver uma próxima execução
+            // Aguarda o intervalo configurado caso ainda haja uma próxima execução
             if (currentPlayback.hasNextRun(completedRuns)
                     && !sleepMillis(currentPlayback.intervalMillis())) {
                 return;
@@ -105,9 +96,9 @@ public class MacroEngine extends AbstractEngine {
     }
 
     /**
-     * Reproduz uma única vez todas as ações da macro, respeitando os tempos gravados.
+     * Reproduz uma única vez a sequência gravada de ações com fidelidade temporal.
      *
-     * @return true se a execução terminou normalmente; false se foi interrompida
+     * @return true se concluído normalmente; false se interrompido
      */
     private boolean playOnce() {
         long startTime = System.nanoTime();
@@ -179,7 +170,8 @@ public class MacroEngine extends AbstractEngine {
         inputSimulator.mouseMove(x2, y2);
         try {
             inputSimulator.mouseRelease(buttonMask);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            LOGGER.log(Level.FINE, "Erro ao liberar botão do mouse durante reprodução", e);
         }
         lastPressedMouseMask = 0;
     }
@@ -206,7 +198,8 @@ public class MacroEngine extends AbstractEngine {
         } finally {
             try {
                 inputSimulator.keyRelease(awtKey);
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                LOGGER.log(Level.FINE, "Erro ao liberar tecla durante reprodução", e);
             }
             lastPressedAwtKey = 0;
         }
@@ -217,7 +210,8 @@ public class MacroEngine extends AbstractEngine {
         if (lastPressedMouseMask != 0) {
             try {
                 inputSimulator.mouseRelease(lastPressedMouseMask);
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                LOGGER.log(Level.FINE, "Erro ao liberar mouse durante limpeza", e);
             }
             lastPressedMouseMask = 0;
         }
@@ -225,7 +219,8 @@ public class MacroEngine extends AbstractEngine {
         if (lastPressedAwtKey != 0) {
             try {
                 inputSimulator.keyRelease(lastPressedAwtKey);
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                LOGGER.log(Level.FINE, "Erro ao liberar tecla durante limpeza", e);
             }
             lastPressedAwtKey = 0;
         }

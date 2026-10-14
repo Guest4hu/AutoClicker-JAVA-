@@ -1,8 +1,8 @@
 package com.example.autoclicker;
 
-import com.example.autoclicker.domain.AutoClickerSetting;
-import com.example.autoclicker.enums.ClickType;
-import com.example.autoclicker.enums.MouseButton;
+import com.example.autoclicker.domain.model.AutoClickerSetting;
+import com.example.autoclicker.domain.model.ClickType;
+import com.example.autoclicker.domain.model.MouseButton;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

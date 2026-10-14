@@ -1,7 +1,6 @@
-package com.example.autoclicker.service;
+package com.example.autoclicker.storage;
 
 import com.example.autoclicker.dto.MacroSettingDTO;
-import com.example.autoclicker.config.JacksonConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -10,17 +9,28 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+/**
+ * Serviço de persistência e recuperação de macros em arquivos JSON no disco local.
+ * Suporta injeção de diretório base e ObjectMapper para isolamento completo em testes.
+ */
 public class MacroStorageService {
-    private final ObjectMapper objectMapper = JacksonConfig.getObjectMapper();
+
     private static final Path DEFAULT_MACRO_DIR = Path.of("storage", "macros");
+
+    private final ObjectMapper objectMapper;
     private final Path macroDir;
 
     public MacroStorageService() {
-        this(DEFAULT_MACRO_DIR);
+        this(DEFAULT_MACRO_DIR, JacksonConfig.getObjectMapper());
     }
 
     public MacroStorageService(Path macroDir) {
+        this(macroDir, JacksonConfig.getObjectMapper());
+    }
+
+    public MacroStorageService(Path macroDir, ObjectMapper objectMapper) {
         this.macroDir = macroDir != null ? macroDir : DEFAULT_MACRO_DIR;
+        this.objectMapper = objectMapper != null ? objectMapper : JacksonConfig.getObjectMapper();
         try {
             Files.createDirectories(this.macroDir);
         } catch (IOException e) {
@@ -28,6 +38,9 @@ public class MacroStorageService {
         }
     }
 
+    /**
+     * Salva uma definição de macro em arquivo JSON. Lança exceção caso já exista arquivo com o mesmo nome.
+     */
     public void save(MacroSettingDTO settingDTO) throws IOException {
         String rawName = settingDTO.name().trim().toLowerCase();
         String nomeArquivo = rawName.endsWith(".json") ? rawName : rawName + ".json";
@@ -38,6 +51,9 @@ public class MacroStorageService {
         objectMapper.writeValue(arquivoDestino.toFile(), settingDTO);
     }
 
+    /**
+     * Carrega e desserializa uma macro a partir de seu nome de arquivo.
+     */
     public MacroSettingDTO load(String nomeArquivo) throws IOException {
         String arquivoFinal = nomeArquivo.endsWith(".json") ? nomeArquivo : nomeArquivo + ".json";
         Path caminhoDestino = macroDir.resolve(arquivoFinal);
@@ -49,7 +65,9 @@ public class MacroStorageService {
         return Files.exists(macroDir.resolve(arquivoFinal));
     }
 
-
+    /**
+     * Lista os nomes de todas as macros salvas no diretório, ordenadas alfabeticamente.
+     */
     public List<String> listAllSettings() throws IOException {
         try (var stream = Files.list(this.macroDir)) {
             return stream

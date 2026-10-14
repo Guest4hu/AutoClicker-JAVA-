@@ -1,9 +1,9 @@
 package com.example.autoclicker;
 
+import com.example.autoclicker.domain.model.ActionType;
+import com.example.autoclicker.domain.model.MacroActionSetting;
 import com.example.autoclicker.dto.MacroSettingDTO;
-import com.example.autoclicker.domain.MacroActionSetting;
-import com.example.autoclicker.enums.ActionType;
-import com.example.autoclicker.service.MacroStorageService;
+import com.example.autoclicker.storage.MacroStorageService;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<ScrollPane fitToWidth="true" styleClass="main-scroll"
+            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.autoclicker.ui.controller.MacroTabController">
+    <VBox spacing="12.0" styleClass="content-container">
+        <!-- Card 1: Gravação e Salvamento -->
+        <VBox spacing="10.0" styleClass="card">
+            <Label text="Gravação de Macro" styleClass="card-title" />
+            <HBox spacing="10.0" alignment="CENTER_LEFT">
+                <Button fx:id="macroButton" text="Gravar Macro (ESC para parar)" onAction="#startMacroRec" styleClass="btn-primary" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+                <Button fx:id="buttonSaveMacro" text="Salvar Macro..." onAction="#saveMacro" styleClass="btn-action-start" />
+            </HBox>
+        </VBox>
+
+        <!-- Card 2: Macros Salvas e Execução -->
+        <VBox spacing="10.0" styleClass="card">
+            <HBox alignment="CENTER_LEFT" spacing="8.0">
+                <Label text="Macros Salvas" styleClass="card-title" />
+                <Region HBox.hgrow="ALWAYS" />
+                <Button text="Atualizar" onAction="#refreshMacroList" styleClass="btn-secondary" />
+            </HBox>
+
+            <!-- Lista onde aparecem os arquivos salvos -->
+            <ListView fx:id="macroListView" prefHeight="130.0" styleClass="macro-list" />
+
+            <!-- Configuração de repetição da macro -->
+            <HBox alignment="CENTER_LEFT" spacing="8.0">
+                <Label text="Repetição" styleClass="field-label" />
+                <Region HBox.hgrow="ALWAYS" />
+                <CheckBox fx:id="macroInfiniteCheck" text="Infinito" onAction="#disableMacroInfinite" selected="false" />
+            </HBox>
+
+            <HBox alignment="CENTER_LEFT" spacing="12.0">
+                <Label text="Quantidade de execuções:" styleClass="field-label" prefWidth="190.0" />
+                <TextField fx:id="macroRepeatField" promptText="1" HBox.hgrow="ALWAYS" />
+                <Label text="vezes" styleClass="field-label" />
+            </HBox>
+
+            <HBox alignment="CENTER_LEFT" spacing="12.0">
+                <Label text="Intervalo entre execuções:" styleClass="field-label" prefWidth="190.0" />
+                <TextField fx:id="macroIntervalField" promptText="0" HBox.hgrow="ALWAYS" />
+                <Label text="ms" styleClass="field-label" />
+            </HBox>
+
+            <!-- Modo Janela Específica (Segundo Plano) -->
+            <VBox spacing="8.0" visible="false" managed="false">
+                <HBox alignment="CENTER_LEFT" spacing="8.0">
+                    <Label text="Janela Alvo" styleClass="field-label" />
+                    <Region HBox.hgrow="ALWAYS" />
+                    <CheckBox fx:id="targetWindowCheck" text="Modo segundo plano" onAction="#toggleTargetWindowMode" selected="false" />
+                </HBox>
+
+                <HBox alignment="CENTER_LEFT" spacing="8.0">
+                    <ComboBox fx:id="targetWindowCombo" promptText="Selecione a janela..." HBox.hgrow="ALWAYS" maxWidth="Infinity" disable="true" />
+                    <Button fx:id="refreshWindowsBtn" text="Atualizar" onAction="#refreshOpenWindows" styleClass="btn-secondary" disable="true" />
+                </HBox>
+            </VBox>
+
+            <Button fx:id="runMacroButton" text="Executar Macro Selecionada" onAction="#runSelectedMacro" styleClass="btn-action-start" maxWidth="Infinity" disable="true" />
+        </VBox>
+
+        <!-- Card 3: Detalhes e Ações da Macro Selecionada -->
+        <VBox spacing="6.0" styleClass="card">
+            <Label text="Visualização das Ações" styleClass="card-title" />
+            <TextArea fx:id="macroStatusAreas" editable="false" prefRowCount="6" wrapText="true" styleClass="terminal-area" />
+        </VBox>
+    </VBox>
+</ScrollPane>

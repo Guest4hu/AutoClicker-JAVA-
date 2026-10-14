@@ -1,8 +1,8 @@
 package com.example.autoclicker;
 
-import com.example.autoclicker.domain.MacroActionSetting;
-import com.example.autoclicker.enums.ActionType;
-import com.example.autoclicker.service.MacroService;
+import com.example.autoclicker.domain.model.ActionType;
+import com.example.autoclicker.domain.model.MacroActionSetting;
+import com.example.autoclicker.input.macro.MacroService;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;

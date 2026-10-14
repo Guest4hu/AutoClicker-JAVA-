@@ -1,17 +1,22 @@
-package com.example.autoclicker.service;
-
+package com.example.autoclicker.input.hotkey;
 
 import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
 
+import java.awt.event.KeyEvent;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+/**
+ * Serviço de gerenciamento e escuta de teclas de atalho globais do sistema operacional via JNativeHook.
+ * Garante concorrência thread-safe para detecção simultânea de teclas e formatação textual resiliente.
+ */
 public class HotkeyService {
+
     private final Set<Integer> hotKeyConfig = Collections.synchronizedSet(new LinkedHashSet<>());
     private final Set<Integer> currentlyPressedKeys = ConcurrentHashMap.newKeySet();
     private volatile boolean capturing = false;
@@ -20,7 +25,7 @@ public class HotkeyService {
     private boolean alreadyTriggered = false;
 
     public HotkeyService() {
-        // Define F6 como atalho padrão
+        // Define F6 como atalho padrão inicial
         hotKeyConfig.add(NativeKeyEvent.VC_F6);
     }
 
@@ -33,6 +38,10 @@ public class HotkeyService {
         return capturing;
     }
 
+    /**
+     * Registra o ouvinte nativo global para disparo do atalho configurado.
+     * O callback é executado na thread de eventos do JNativeHook.
+     */
     public void start(Runnable onHotkeyTriggered) {
         if (started) {
             return;
@@ -73,10 +82,7 @@ public class HotkeyService {
     }
 
     /**
-     * Registra um ouvinte global para a tecla ESC, que funciona mesmo com a aplicação
-     * minimizada ou em segundo plano. Só é registrado uma vez.
-     *
-     * @param onStopKeyPressed ação executada (na thread do JNativeHook) ao pressionar ESC
+     * Registra um ouvinte global para a tecla ESC, funcionando com a aplicação focada ou em background.
      */
     public void registerStopKey(Runnable onStopKeyPressed) {
         if (stopKeyStarted) {
@@ -94,6 +100,9 @@ public class HotkeyService {
         });
     }
 
+    /**
+     * Retorna a representação textual formatada do atalho atualmente configurado (ex.: "Ctrl + Shift + F6").
+     */
     public String getHotkeyText() {
         if (hotKeyConfig.isEmpty()) {
             return "Nenhum atalho configurado";
@@ -105,6 +114,9 @@ public class HotkeyService {
         }
     }
 
+    /**
+     * Formata o nome de uma tecla com fallback seguro para ambientes headless ou sem AWT Toolkit.
+     */
     public static String formatKeyText(int keyCode) {
         try {
             return NativeKeyEvent.getKeyText(keyCode);
@@ -114,11 +126,9 @@ public class HotkeyService {
     }
 
     public static String getFallbackKeyText(int keyCode) {
-        if (keyCode >= NativeKeyEvent.VC_F1 && keyCode <= NativeKeyEvent.VC_F12) {
-            return "F" + (keyCode - NativeKeyEvent.VC_F1 + 1);
-        }
-        if (keyCode >= NativeKeyEvent.VC_F13 && keyCode <= NativeKeyEvent.VC_F24) {
-            return "F" + (keyCode - NativeKeyEvent.VC_F13 + 13);
+        int awt = NativeKeyConfig.toAwtKeyCode(keyCode);
+        if (awt >= KeyEvent.VK_F1 && awt <= KeyEvent.VK_F24) {
+            return "F" + (awt - KeyEvent.VK_F1 + 1);
         }
         return switch (keyCode) {
             case NativeKeyEvent.VC_ESCAPE -> "Esc";
@@ -135,8 +145,7 @@ public class HotkeyService {
             case NativeKeyEvent.VC_LEFT -> "Left";
             case NativeKeyEvent.VC_RIGHT -> "Right";
             default -> {
-                int awt = com.example.autoclicker.config.NativeKeyConfig.toAwtKeyCode(keyCode);
-                if (awt != java.awt.event.KeyEvent.VK_UNDEFINED) {
+                if (awt != KeyEvent.VK_UNDEFINED) {
                     char c = (char) awt;
                     if ((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) {
                         yield String.valueOf(c);
@@ -147,6 +156,9 @@ public class HotkeyService {
         };
     }
 
+    /**
+     * Ativa modo interativo de captura para gravação de nova combinação de teclas.
+     */
     public void captureHotkey(Runnable onFinished) {
         capturing = true;
         Set<Integer> comboTemporario = new LinkedHashSet<>();
@@ -154,7 +166,6 @@ public class HotkeyService {
         NativeKeyListener listener = new NativeKeyListener() {
             @Override
             public void nativeKeyPressed(NativeKeyEvent e) {
-                // Se a tecla for ESC (NativeKeyEvent.VC_ESCAPE), nós cancelamos!
                 if (e.getKeyCode() == NativeKeyEvent.VC_ESCAPE) {
                     GlobalScreen.removeNativeKeyListener(this);
                     comboTemporario.clear();
@@ -162,29 +173,23 @@ public class HotkeyService {
                     if (onFinished != null) onFinished.run();
                     return;
                 }
-
-                // Se for outra tecla, adicionamos ao combo temporário:
                 comboTemporario.add(e.getKeyCode());
             }
 
             @Override
             public void nativeKeyReleased(NativeKeyEvent e) {
-                // Quando soltar e tivermos teclas acumuladas:
                 if (!comboTemporario.isEmpty()) {
                     hotKeyConfig.clear();
                     hotKeyConfig.addAll(comboTemporario);
 
-                    // 1. Remove o listener para não ouvir mais nada
                     GlobalScreen.removeNativeKeyListener(this);
                     capturing = false;
 
-                    // 2. Avisa a interface que acabou
                     if (onFinished != null) onFinished.run();
                 }
             }
         };
 
-        // Ativa o ouvinte temporário no sistema
         GlobalScreen.addNativeKeyListener(listener);
     }
 }

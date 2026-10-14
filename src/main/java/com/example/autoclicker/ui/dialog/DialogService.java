@@ -1,4 +1,4 @@
-package com.example.autoclicker.service;
+package com.example.autoclicker.ui.dialog;
 
 import com.example.autoclicker.dto.MacroDialogDTO;
 import javafx.application.Platform;
@@ -8,15 +8,20 @@ import javafx.scene.layout.GridPane;
 
 import java.util.Optional;
 
+/**
+ * Serviço responsável por exibir caixas de diálogo modais JavaFX na interface.
+ */
 public class DialogService {
-    public Optional<MacroDialogDTO> showMacroDialog(){
+
+    /**
+     * Exibe o diálogo modal para solicitação do nome e descrição da macro a salvar.
+     */
+    public Optional<MacroDialogDTO> showMacroDialog() {
         Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("Salvar Dialog");
+        dialog.setTitle("Salvar Macro");
         dialog.setHeaderText("Defina as informações da sua macro");
-        ButtonType salvarBtnType = new ButtonType("Salvar", ButtonBar.ButtonData.
-                OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(salvarBtnType, ButtonType.
-                CANCEL);
+        ButtonType salvarBtnType = new ButtonType("Salvar", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(salvarBtnType, ButtonType.CANCEL);
 
         GridPane grid = new GridPane();
         grid.setHgap(10);
@@ -39,17 +44,13 @@ public class DialogService {
 
         Optional<ButtonType> result = dialog.showAndWait();
 
-        // Se clicou em "Salvar" e digitou um nome não-vazio, retorna os dados preenchidos
         if (result.isPresent() && result.get() == salvarBtnType) {
             String nome = nameField.getText().trim();
-
-            // Não precisa deixar optional o  JavaFx ja deixa nullo se estiver vazio
             String desc = descField.getText().trim();
             if (!nome.isEmpty()) {
-                return Optional.of(new MacroDialogDTO(nome,desc));
+                return Optional.of(new MacroDialogDTO(nome, desc));
             }
         }
-        // Se cancelou ou fechou a janela
         return Optional.empty();
     }
 }

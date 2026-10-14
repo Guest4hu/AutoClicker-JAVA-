@@ -1,4 +1,4 @@
-package com.example.autoclicker.domain;
+package com.example.autoclicker.domain.engine;
 
 import com.example.autoclicker.input.simulator.AwtRobotInputSimulator;
 import com.example.autoclicker.input.simulator.InputSimulator;
@@ -27,6 +27,9 @@ public abstract class AbstractEngine {
         this.inputSimulator = inputSimulator != null ? inputSimulator : createDefaultSimulator();
     }
 
+    /**
+     * Cria o simulador padrão com base na disponibilidade do ambiente gráfico (AWT vs Headless).
+     */
     public static InputSimulator createDefaultSimulator() {
         try {
             if (GraphicsEnvironment.isHeadless()) {

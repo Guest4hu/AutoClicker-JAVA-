@@ -1,7 +1,10 @@
-package com.example.autoclicker.enums;
+package com.example.autoclicker.domain.model;
 
 import java.awt.event.InputEvent;
 
+/**
+ * Representa os botões do mouse suportados para emulação e disparo no AutoClicker.
+ */
 public enum MouseButton {
     ESQUERDO(InputEvent.BUTTON1_DOWN_MASK, "Botão Esquerdo (Primário)"),
     DIREITO(InputEvent.BUTTON3_DOWN_MASK, "Botão Direito (Secundário)"),
@@ -15,6 +18,9 @@ public enum MouseButton {
         this.displayName = displayName;
     }
 
+    /**
+     * Retorna a máscara binária de evento do mouse (AWT InputEvent mask).
+     */
     public int getMask() {
         return mask;
     }

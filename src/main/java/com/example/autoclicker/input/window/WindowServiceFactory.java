@@ -1,12 +1,15 @@
-package com.example.autoclicker.config;
-
-import com.example.autoclicker.service.LinuxX11WindowService;
-import com.example.autoclicker.service.WindowService;
-import com.example.autoclicker.service.WindowsWindowService;
+package com.example.autoclicker.input.window;
 
 import java.util.List;
 
-public class OperationalSystemConfig {
+/**
+ * Factory Method para instanciação da implementação apropriada de {@link WindowService}
+ * com base no sistema operacional identificado em tempo de execução.
+ */
+public class WindowServiceFactory {
+
+    private WindowServiceFactory() {}
+
     public static WindowService create() {
         String os = System.getProperty("os.name").toLowerCase();
         if (os.contains("win")) {
@@ -16,5 +19,5 @@ public class OperationalSystemConfig {
             return new LinuxX11WindowService();
         }
         return List::of;
-    };
+    }
 }
