@@ -1,4 +1,4 @@
-package com.example.autoclicker.domain;
+package com.example.autoclicker.DTO;
 
 /**
  * Configuração de reprodução de uma macro: quantas vezes ela deve ser executada
@@ -8,9 +8,9 @@ package com.example.autoclicker.domain;
  * @param repeatCount    quantidade de execuções (ignorado quando infinite = true)
  * @param intervalMillis pausa, em milissegundos, entre o fim de uma execução e o início da próxima
  */
-public record MacroPlaybackSetting(boolean infinite, int repeatCount, long intervalMillis) {
+public record MacroPlaybackSettingDTO(boolean infinite, int repeatCount, long intervalMillis) {
 
-    public MacroPlaybackSetting {
+    public MacroPlaybackSettingDTO {
         if (!infinite && repeatCount <= 0) {
             throw new IllegalArgumentException("Quantidade de execuções deve ser maior que 0.");
         }
@@ -20,16 +20,16 @@ public record MacroPlaybackSetting(boolean infinite, int repeatCount, long inter
     }
 
     /** Executa a macro uma única vez (comportamento original). */
-    public static MacroPlaybackSetting once() {
-        return new MacroPlaybackSetting(false, 1, 0);
+    public static MacroPlaybackSettingDTO once() {
+        return new MacroPlaybackSettingDTO(false, 1, 0);
     }
 
-    public static MacroPlaybackSetting infiniteRuns(long intervalMillis) {
-        return new MacroPlaybackSetting(true, 0, intervalMillis);
+    public static MacroPlaybackSettingDTO infiniteRuns(long intervalMillis) {
+        return new MacroPlaybackSettingDTO(true, 0, intervalMillis);
     }
 
-    public static MacroPlaybackSetting limitedRuns(int repeatCount, long intervalMillis) {
-        return new MacroPlaybackSetting(false, repeatCount, intervalMillis);
+    public static MacroPlaybackSettingDTO limitedRuns(int repeatCount, long intervalMillis) {
+        return new MacroPlaybackSettingDTO(false, repeatCount, intervalMillis);
     }
 
     /**

@@ -78,6 +78,7 @@ public class MacroService {
         NativeMouseListener mouseListener = new NativeMouseListener() {
             @Override
             public void nativeMousePressed(NativeMouseEvent nativeEvent) {
+                System.out.println(">>> MOUSE PRESSIONADO: " + nativeEvent.getButton());
                 macroActionsTemp.add(new MacroActionSetting(
                         ActionType.MOUSE,
                         nativeEvent.getButton(),

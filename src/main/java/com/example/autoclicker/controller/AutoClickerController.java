@@ -1,9 +1,12 @@
 package com.example.autoclicker.controller;
 
 import com.example.autoclicker.DTO.MacroSettingDTO;
+import com.example.autoclicker.DTO.WindowInfoDTO;
+import com.example.autoclicker.config.OperationalSystemConfig;
 import com.example.autoclicker.domain.AutoClickerEngine;
 import com.example.autoclicker.domain.AutoClickerSetting;
 import com.example.autoclicker.domain.MacroEngine;
+import com.example.autoclicker.DTO.MacroPlaybackSettingDTO;
 import com.example.autoclicker.enums.ClickType;
 import com.example.autoclicker.enums.MouseButton;
 import com.example.autoclicker.enums.StatusState;
@@ -11,6 +14,7 @@ import com.example.autoclicker.service.DialogService;
 import com.example.autoclicker.service.HotkeyService;
 import com.example.autoclicker.service.MacroService;
 import com.example.autoclicker.service.MacroStorageService;
+import com.example.autoclicker.service.WindowService;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -36,10 +40,12 @@ public class AutoClickerController {
     private final MacroService macroService;
     private final DialogService dialogService;
     private final MacroStorageService macroStorageService;
+    private final WindowService windowService;
     private final AutoClickerEngine autoClickerEngine = new AutoClickerEngine();
     private final MacroEngine macroEngine = new MacroEngine();
 
     private boolean isMacroRecording = false;
+    private boolean macroCancelledByUser = false;
     private boolean isRunning = false;
     private long startTimeMillis = 0;
     private Timeline statsTimeline;
@@ -114,25 +120,48 @@ public class AutoClickerController {
     @FXML
     private TextArea macroStatusAreas;
 
+    @FXML
+    private CheckBox macroInfiniteCheck;
+
+    @FXML
+    private TextField macroRepeatField;
+
+    @FXML
+    private TextField macroIntervalField;
+
+    @FXML
+    private CheckBox targetWindowCheck;
+
+    @FXML
+    private ComboBox<WindowInfoDTO> targetWindowCombo;
+
+    @FXML
+    private Button refreshWindowsBtn;
+
     /**
      * Construtor padrão sem argumentos exigido pelo JavaFX e IDEs (SceneBuilder/IntelliJ).
      */
     public AutoClickerController() {
-        this(new HotkeyService(), new MacroService(), new DialogService(), new MacroStorageService());
+        this(new HotkeyService(), new MacroService(), new DialogService(), new MacroStorageService(), OperationalSystemConfig.create());
     }
 
     public AutoClickerController(HotkeyService hotkeyService) {
-        this(hotkeyService, new MacroService(), new DialogService(), new MacroStorageService());
+        this(hotkeyService, new MacroService(), new DialogService(), new MacroStorageService(), OperationalSystemConfig.create());
     }
 
     /**
      * Construtor com injeção de dependências utilizado pela Factory na Application.
      */
     public AutoClickerController(HotkeyService hotkeyService, MacroService macroService, DialogService dialogService, MacroStorageService macroStorageService) {
+        this(hotkeyService, macroService, dialogService, macroStorageService, OperationalSystemConfig.create());
+    }
+
+    public AutoClickerController(HotkeyService hotkeyService, MacroService macroService, DialogService dialogService, MacroStorageService macroStorageService, WindowService windowService) {
         this.hotkeyService = hotkeyService;
         this.macroService = macroService;
         this.dialogService = dialogService;
         this.macroStorageService = macroStorageService;
+        this.windowService = windowService;
     }
 
     @FXML
@@ -149,6 +178,11 @@ public class AutoClickerController {
         setupNumericField(intervalField);
         setupNumericField(delayField);
         setupNumericField(clickCountField);
+
+        macroRepeatField.setText("1");
+        macroIntervalField.setText("0");
+        setupNumericField(macroRepeatField);
+        setupNumericField(macroIntervalField);
 
         intervalField.textProperty().addListener((obs, oldVal, newVal) -> updateCpsEstimate());
         updateCpsEstimate();
@@ -236,6 +270,9 @@ public class AutoClickerController {
         hotkeyService.start(() -> {
             Platform.runLater(this::buttonStopAndStart);
         });
+
+        // ESC global: interrompe a macro em execução, mesmo com a janela minimizada
+        hotkeyService.registerStopKey(() -> Platform.runLater(this::stopMacroPlayback));
     }
 
     @FXML
@@ -532,9 +569,7 @@ public class AutoClickerController {
     @FXML
     public void runSelectedMacro(ActionEvent event) {
         if (MacroEngine.isMacroRunning()) {
-            MacroEngine.stopMacro();
-            runMacroButton.setText("Executar Macro Selecionada");
-            macroLog("Reprodução da macro cancelada.");
+            stopMacroPlayback();
             return;
         }
 
@@ -544,22 +579,90 @@ public class AutoClickerController {
         }
 
         try {
+            MacroPlaybackSettingDTO playback = criarMacroPlaybackSetting();
             MacroSettingDTO macro = macroStorageService.load(selected);
-            macroLog("Iniciando reprodução da macro: " + selected + "...");
-            runMacroButton.setText("Parar Macro");
+            macroLog("Iniciando reprodução da macro: " + selected + " ("
+                    + (playback.infinite() ? "infinito" : playback.repeatCount() + "x")
+                    + ", intervalo " + playback.intervalMillis() + "ms)... [ESC para parar]");
+            runMacroButton.setText("Parar Macro (ESC)");
+            macroCancelledByUser = false;
+
+            macroEngine.setIterationListener(run -> Platform.runLater(() ->
+                    macroLog("Execução #" + run + (playback.infinite() ? "" : " de " + playback.repeatCount()))
+            ));
 
             macroEngine.setFinishListener(() -> {
                 Platform.runLater(() -> {
                     runMacroButton.setText("Executar Macro Selecionada");
-                    macroLog("Macro '" + selected + "' finalizada com sucesso!");
+                    if (!macroCancelledByUser) {
+                        macroLog("Macro '" + selected + "' finalizada com sucesso!");
+                    }
                 });
             });
-
             MacroEngine.startMacro(macro);
 
         } catch (Exception e) {
             macroLog("Erro ao executar macro: " + e.getMessage());
             runMacroButton.setText("Executar Macro Selecionada");
         }
+    }
+
+    /**
+     * Interrompe a macro em execução. Chamado tanto pelo botão quanto pela tecla ESC global.
+     * Deve rodar na thread do JavaFX, pois atualiza componentes da interface.
+     */
+    private void stopMacroPlayback() {
+        if (!MacroEngine.isMacroRunning()) {
+            return;
+        }
+        macroCancelledByUser = true;
+        MacroEngine.stopMacro();
+        runMacroButton.setText("Executar Macro Selecionada");
+        macroLog("Reprodução da macro cancelada.");
+    }
+
+    @FXML
+    public void disableMacroInfinite() {
+        boolean isInfinite = macroInfiniteCheck.isSelected();
+        macroRepeatField.setDisable(isInfinite);
+        if (!isInfinite && (macroRepeatField.getText() == null || macroRepeatField.getText().isBlank())) {
+            macroRepeatField.setText("1");
+        }
+    }
+
+    @FXML
+    public void toggleTargetWindowMode() {
+        boolean enabled = targetWindowCheck.isSelected();
+        targetWindowCombo.setDisable(!enabled);
+        refreshWindowsBtn.setDisable(!enabled);
+        if (enabled && targetWindowCombo.getItems().isEmpty()) {
+            refreshOpenWindows();
+        }
+    }
+
+    @FXML
+    public void refreshOpenWindows() {
+        macroLog("Buscando janelas abertas...");
+        List<WindowInfoDTO> windows = windowService.getOpenWindows();
+        targetWindowCombo.getItems().setAll(windows);
+        if (!windows.isEmpty()) {
+            targetWindowCombo.getSelectionModel().selectFirst();
+            macroLog(windows.size() + " janela(s) encontrada(s).");
+        } else {
+            macroLog("Nenhuma janela encontrada.");
+        }
+    }
+
+    private MacroPlaybackSettingDTO criarMacroPlaybackSetting() {
+        String intervalText = macroIntervalField.getText() != null ? macroIntervalField.getText().trim() : "";
+        long interval = intervalText.isEmpty() ? 0 : Long.parseLong(intervalText);
+
+        if (macroInfiniteCheck.isSelected()) {
+            return MacroPlaybackSettingDTO.infiniteRuns(interval);
+        }
+
+        String repeatText = macroRepeatField.getText() != null ? macroRepeatField.getText().trim() : "";
+        int repeatCount = repeatText.isEmpty() ? 1 : Integer.parseInt(repeatText);
+        return MacroPlaybackSettingDTO.limitedRuns(repeatCount, interval);
     }
 }

@@ -1,5 +1,6 @@
 package com.example.autoclicker.domain;
 
+import com.example.autoclicker.DTO.MacroPlaybackSettingDTO;
 import com.example.autoclicker.DTO.MacroSettingDTO;
 import com.example.autoclicker.config.NativeKeyConfig;
 import com.example.autoclicker.enums.ActionType;
@@ -12,7 +13,7 @@ public class MacroEngine extends AbstractEngine {
     private static final MacroEngine INSTANCE = new MacroEngine();
 
     private MacroSettingDTO currentMacro;
-    private MacroPlaybackSetting currentPlayback = MacroPlaybackSetting.once();
+    private MacroPlaybackSettingDTO currentPlayback = MacroPlaybackSettingDTO.once();
     private IntConsumer iterationListener;
     private int lastPressedMouseMask = 0;
     private int lastPressedAwtKey = 0;
@@ -24,10 +25,10 @@ public class MacroEngine extends AbstractEngine {
     // --- Métodos Estáticos (Fachada para facilidade de uso) ---
 
     public static synchronized void startMacro(MacroSettingDTO macroActionDto) {
-        INSTANCE.startWith(macroActionDto, MacroPlaybackSetting.once());
+        INSTANCE.startWith(macroActionDto, MacroPlaybackSettingDTO.once());
     }
 
-    public static synchronized void startMacro(MacroSettingDTO macroActionDto, MacroPlaybackSetting playbackSetting) {
+    public static synchronized void startMacro(MacroSettingDTO macroActionDto, MacroPlaybackSettingDTO playbackSetting) {
         INSTANCE.startWith(macroActionDto, playbackSetting);
     }
 
@@ -54,15 +55,15 @@ public class MacroEngine extends AbstractEngine {
     // --- Métodos de Instância ---
 
     public synchronized void startWith(MacroSettingDTO macroActionDto) {
-        startWith(macroActionDto, MacroPlaybackSetting.once());
+        startWith(macroActionDto, MacroPlaybackSettingDTO.once());
     }
 
-    public synchronized void startWith(MacroSettingDTO macroActionDto, MacroPlaybackSetting playbackSetting) {
+    public synchronized void startWith(MacroSettingDTO macroActionDto, MacroPlaybackSettingDTO playbackSetting) {
         if (macroActionDto == null || macroActionDto.configs() == null || macroActionDto.configs().isEmpty()) {
             throw new IllegalStateException("Nenhuma ação gravada para executar.");
         }
         this.currentMacro = macroActionDto;
-        this.currentPlayback = (playbackSetting != null) ? playbackSetting : MacroPlaybackSetting.once();
+        this.currentPlayback = (playbackSetting != null) ? playbackSetting : MacroPlaybackSettingDTO.once();
         start("macro-clicker");
     }
 

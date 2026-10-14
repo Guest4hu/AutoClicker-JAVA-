@@ -184,6 +184,39 @@
                         <!-- Lista onde aparecem os arquivos salvos -->
                         <ListView fx:id="macroListView" prefHeight="130.0" styleClass="macro-list" />
 
+                        <!-- Configuração de repetição da macro -->
+                        <HBox alignment="CENTER_LEFT" spacing="8.0">
+                            <Label text="Repetição" styleClass="field-label" />
+                            <Region HBox.hgrow="ALWAYS" />
+                            <CheckBox fx:id="macroInfiniteCheck" text="Infinito" onAction="#disableMacroInfinite" selected="false" />
+                        </HBox>
+
+                        <HBox alignment="CENTER_LEFT" spacing="12.0">
+                            <Label text="Quantidade de execuções:" styleClass="field-label" prefWidth="190.0" />
+                            <TextField fx:id="macroRepeatField" promptText="1" HBox.hgrow="ALWAYS" />
+                            <Label text="vezes" styleClass="field-label" />
+                        </HBox>
+
+                        <HBox alignment="CENTER_LEFT" spacing="12.0">
+                            <Label text="Intervalo entre execuções:" styleClass="field-label" prefWidth="190.0" />
+                            <TextField fx:id="macroIntervalField" promptText="0" HBox.hgrow="ALWAYS" />
+                            <Label text="ms" styleClass="field-label" />
+                        </HBox>
+
+                        <!-- Modo Janela Específica (Segundo Plano) - Recurso experimental planejado para v2.1+ -->
+                        <VBox spacing="8.0" visible="false" managed="false">
+                            <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                <Label text="Janela Alvo" styleClass="field-label" />
+                                <Region HBox.hgrow="ALWAYS" />
+                                <CheckBox fx:id="targetWindowCheck" text="Modo segundo plano" onAction="#toggleTargetWindowMode" selected="false" />
+                            </HBox>
+
+                            <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                <ComboBox fx:id="targetWindowCombo" promptText="Selecione a janela..." HBox.hgrow="ALWAYS" maxWidth="Infinity" disable="true" />
+                                <Button fx:id="refreshWindowsBtn" text="Atualizar" onAction="#refreshOpenWindows" styleClass="btn-secondary" disable="true" />
+                            </HBox>
+                        </VBox>
+
                         <Button fx:id="runMacroButton" text="Executar Macro Selecionada" onAction="#runSelectedMacro" styleClass="btn-action-start" maxWidth="Infinity" disable="true" />
                     </VBox>
 
