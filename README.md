@@ -1,203 +1,184 @@
-# AutoClicker (JavaFX)
+# AutoClicker & Macro Pro (JavaFX) - Versão 2.0
 
-Projeto desktop em JavaFX para automatizar cliques de mouse com configuracao de intervalo, atraso inicial, modo infinito/limitado, tipo de clique e hotkey para iniciar/parar.
+Aplicativo desktop modular de alta performance desenvolvido em **Java 25 LTS** e **JavaFX 21**, projetado para automação de cliques e gravação/reprodução de macros com suporte a **Hotkeys Globais** (JNativeHook) e arquitetura orientada a padrões de projeto de mercado (Clean Architecture, Strategy, Template Method e SOLID).
 
-## Objetivo do projeto
+---
 
-Este projeto foi organizado para separar responsabilidades:
+## 🚀 Novidades da Versão 2.0
 
-- UI e eventos de tela no controller (`AutoClickerController`)
-- regras de configuracao e validacao no dominio (`AutoClickerSetting`)
-- execucao do clique em thread dedicada (`AutoClickerEngine`)
+A versão **2.0** traz uma reformulação arquitetural profunda e recursos profissionais de automação:
 
-Assim, voce pode evoluir backend/automacao sem reescrever o layout.
+- **Sistema Avançado de Gravação e Reprodução de Macros**:
+  - Gravação global em tempo real (cliques simples, cliques duplos, arrastos de mouse *drag and drop* e teclas).
+  - Tecla de atalho global **`[ESC]`** para parada emergencial instantânea, mesmo com o aplicativo desfocado ou minimizado.
+  - Repetição flexível: modo de execução única, quantidade finita de repetições ou ciclo infinito, com intervalos configuráveis em milissegundos.
+  - Visualização em tempo real das ações gravadas com linha do tempo formatada.
+- **Persistência Estruturada e Retrocompatibilidade (JSON)**:
+  - Armazenamento em disco na pasta `storage/macros/` usando Jackson Databind 2.18 com suporte total a esquemas legados via `@JsonAlias` e `@JsonIgnoreProperties`.
+  - Carregamento e gravação de arquivos JSON 100% assíncronos via `CompletableFuture`, sem travamento da interface gráfica.
+- **Camada de Abstração de Hardware (`InputSimulator`)**:
+  - Desacoplamento completo do `java.awt.Robot` concreto através da interface [`InputSimulator`](file:///home/guest4hu/Documents/Projects/Java/AutoClicker-JAVA-/src/main/java/com/example/autoclicker/input/simulator/InputSimulator.java).
+  - Implementação de produção: [`AwtRobotInputSimulator`](file:///home/guest4hu/Documents/Projects/Java/AutoClicker-JAVA-/src/main/java/com/example/autoclicker/input/simulator/AwtRobotInputSimulator.java).
+  - Implementação de testes em memória: [`VirtualInputSimulator`](file:///home/guest4hu/Documents/Projects/Java/AutoClicker-JAVA-/src/main/java/com/example/autoclicker/input/simulator/VirtualInputSimulator.java) para testes determinísticos sem mexer no cursor do desenvolvedor.
+- **Decomposição do "God Controller" (Padrão MVC Modular com `<fx:include>`)**:
+  - Divisão da interface em abas autônomas: [`AutoClickerTabController`](file:///home/guest4hu/Documents/Projects/Java/AutoClicker-JAVA-/src/main/java/com/example/autoclicker/ui/controller/AutoClickerTabController.java) e [`MacroTabController`](file:///home/guest4hu/Documents/Projects/Java/AutoClicker-JAVA-/src/main/java/com/example/autoclicker/ui/controller/MacroTabController.java), orquestradas pelo [`MainController`](file:///home/guest4hu/Documents/Projects/Java/AutoClicker-JAVA-/src/main/java/com/example/autoclicker/ui/controller/MainController.java).
+  - Injeção de dependências limpa através da `ControllerFactory` no [`AutoClickerApplication`](file:///home/guest4hu/Documents/Projects/Java/AutoClicker-JAVA-/src/main/java/com/example/autoclicker/AutoClickerApplication.java).
+- **Thread-Safety e Concorrência**:
+  - Coleções compartilhadas protegidas com coleções sincronizadas e sets concorrentes em [`MacroService`](file:///home/guest4hu/Documents/Projects/Java/AutoClicker-JAVA-/src/main/java/com/example/autoclicker/input/macro/MacroService.java) e [`HotkeyService`](file:///home/guest4hu/Documents/Projects/Java/AutoClicker-JAVA-/src/main/java/com/example/autoclicker/input/hotkey/HotkeyService.java).
 
-## Funcionalidades atuais
+---
 
-- Layout JavaFX em FXML (`autoClicker-view.fxml`)
-- Campos de configuracao:
-  - Intervalo entre cliques (ms)
-  - Atraso inicial (ms)
-  - Quantidade de cliques
-  - Modo infinito
-  - Tipo de clique (`SIMPLES`, `DUPLO`)
-  - Botao do mouse (`ESQUERDO`, `DIREITO`, `MEIO`)
-- Captura de hotkey pela propria tela
-- Botao de iniciar/parar com mudanca visual de estado
-- Execucao de clique em thread separada (evita travar a UI)
-- Validacoes de configuracao antes de iniciar
+## ⚡ Recursos do AutoClicker
 
-## Limitacao importante (hotkey)
+- **Presets Rápidos de Velocidade**:
+  - Botões de um clique: `1 ms`, `10 ms`, `50 ms`, `100 ms`, `500 ms` e `1000 ms`.
+  - Estimativa imediata da taxa de CPS (Cliques por Segundo).
+- **Configuração de Periféricos**:
+  - Botões suportados: Esquerdo, Direito e Meio (Scroll).
+  - Tipo de clique: Simples ou Duplo.
+  - Modos de execução: Contínuo (Infinito) ou com contagem limitada e encerramento automático.
+- **Métricas e Monitoramento ao Vivo**:
+  - Estatísticas de cliques executados, tempo decorrido e CPS real medido.
+- **Atalhos Globais**:
+  - Atalho padrão `F6` configurável para qualquer tecla do teclado.
 
-A hotkey atual depende de eventos da `Scene` JavaFX.
+---
 
-- Funciona quando a janela esta em foco
-- Nao e hotkey global do sistema operacional
+## 🏗️ Arquitetura do Projeto
 
-Existe uma classe `GlobalHotkeyListener`, mas na versao atual ela funciona como helper em memoria, nao como hook nativo global do Windows.
-
-## Stack tecnica
-
-- Java 25 (Temurin)
-- JavaFX 21.0.6
-- Maven Wrapper (`mvnw.cmd`)
-- FXML + controller JavaFX
-
-## Estrutura do projeto
+O projeto segue rigorosamente o padrão canônico Java/JavaFX com modularização de pacotes:
 
 ```text
-src/main/java/
-  module-info.java
-  com/example/autoclicker/
-    AutoClickerApplication.java
-    Launcher.java
-    Controller/
-      AutoClickerController.java
-    domain/
-      AutoClickerSetting.java
-      AutoClickerEngine.java
-    service/
-      GlobalHotkeyListener.java
-
-src/main/resources/
-  com/example/autoclicker/
-    autoClicker-view.fxml
+src/
+├── main/
+│   ├── java/
+│   │   ├── module-info.java
+│   │   └── com/example/autoclicker/
+│   │       ├── AutoClickerApplication.java      # Bootstrap JavaFX e Injeção de Dependências
+│   │       ├── Launcher.java                    # Entry point para compatibilidade de empacotamento
+│   │       ├── domain/
+│   │       │   ├── engine/                      # Motores de execução assíncrona (Template Method)
+│   │       │   │   ├── AbstractEngine.java
+│   │       │   │   ├── AutoClickerEngine.java
+│   │       │   │   └── MacroEngine.java
+│   │       │   └── model/                       # Modelos de domínio e regras de negócio
+│   │       │       ├── ActionType.java
+│   │       │       ├── AutoClickerSetting.java
+│   │       │       ├── ClickType.java
+│   │       │       ├── MacroActionSetting.java
+│   │       │       ├── MouseButton.java
+│   │       │       └── StatusState.java
+│   │       ├── dto/                             # Data Transfer Objects serializáveis (JavaBeans/Records)
+│   │       │   ├── MacroDialogDTO.java
+│   │       │   ├── MacroPlaybackSettingDTO.java
+│   │       │   ├── MacroSettingDTO.java
+│   │       │   └── WindowInfoDTO.java
+│   │       ├── input/
+│   │       │   ├── hotkey/                      # Gestão de atalhos globais (JNativeHook)
+│   │       │   │   └── HotkeyService.java
+│   │       │   ├── macro/                       # Captura de eventos do usuário em tempo real
+│   │       │   │   └── MacroService.java
+│   │       │   ├── simulator/                   # Abstração de hardware de entrada (Strategy)
+│   │       │   │   ├── AwtRobotInputSimulator.java
+│   │       │   │   ├── InputSimulator.java
+│   │       │   │   └── VirtualInputSimulator.java
+│   │       │   └── window/                      # Descoberta de janelas nativas (Panama FFM / OS)
+│   │       │       ├── LinuxX11WindowService.java
+│   │       │       ├── WindowService.java
+│   │       │       ├── WindowServiceFactory.java
+│   │       │       └── WindowsWindowService.java
+│   │       ├── storage/                         # Persistência em disco via Jackson
+│   │       │   ├── JacksonConfig.java
+│   │       │   └── MacroStorageService.java
+│   │       └── ui/                              # Apresentação visual JavaFX
+│   │           ├── controller/                  # Sub-controladores modulares
+│   │           │   ├── AutoClickerTabController.java
+│   │           │   ├── MacroTabController.java
+│   │           │   └── MainController.java
+│   │           └── dialog/                      # Diálogos e modais
+│   │               └── DialogService.java
+│   └── resources/
+│       └── com/example/autoclicker/
+│           ├── auto-clicker-tab.fxml            # Aba do AutoClicker
+│           ├── macro-tab.fxml                   # Aba do Gravador/Reprodutor de Macros
+│           ├── main-view.fxml                   # Layout principal com TabPane e <fx:include>
+│           ├── autoClicker-view.fxml            # FXML compatível com o Launcher original
+│           ├── styles.css                       # Tema Dark Mode personalizado
+│           └── icon.png                         # Ícone da aplicação
+└── test/
+    └── java/com/example/autoclicker/            # 12 suítes de testes unitários automatizados (38 testes)
+        ├── AutoClickerEngineTest.java
+        ├── AutoClickerSettingTest.java
+        ├── FXMLValidationTest.java
+        ├── HotkeyServiceTest.java
+        ├── MacroActionSettingTest.java
+        ├── MacroEngineTest.java
+        ├── MacroPlaybackSettingDTOTest.java
+        ├── MacroServiceTest.java
+        ├── MacroStorageServiceTest.java
+        ├── VirtualInputSimulatorTest.java
+        ├── WindowInfoDTOTest.java
+        └── WindowServiceFactoryTest.java
 ```
 
-## Arquitetura (resumo)
+---
 
-### `AutoClickerController`
+## 🛠️ Tecnologias e Dependências
 
-Responsavel por:
+- **Linguagem**: Java 25 LTS (OpenJDK).
+- **Interface Gráfica**: OpenJFX 21.0.6 (JavaFX Controls e FXML).
+- **Captura Global**: JNativeHook 2.2.2.
+- **Serialização**: Jackson Databind 2.18.2 + Jackson JSR-310 (Java Time).
+- **Testes**: JUnit 5.12.1 + Maven Surefire 3.2.5.
 
-- carregar valores padrao da UI
-- ler formulario
-- capturar hotkey
-- montar `AutoClickerSetting`
-- exibir erros no `statusArea`
-- acionar `AutoClickerEngine.startAutoClicker()` e `stopAutoClicker()`
+---
 
-### `AutoClickerSetting`
+## 🚀 Como Executar
 
-Contem:
+### Pré-requisitos
+- **JDK 21+** (recomendado Java 25).
+- **Maven 3.8+** (ou o wrapper `./mvnw` incluso).
 
-- enums `ClickType` e `MouseButton`
-- dados da configuracao (`interval`, `delay`, `clickCount`, etc.)
-- validacao de regras via `validateSetting()`
-
-### `AutoClickerEngine`
-
-Contem a execucao de clique:
-
-- usa `java.awt.Robot`
-- executa em thread daemon (`auto-clicker-worker`)
-- respeita delay inicial e intervalo
-- suporta cliques infinitos e limitados
-- permite parada via `stopAutoClicker()`
-
-## Regras de validacao
-
-Implementadas em `AutoClickerSetting.validateSetting()`:
-
-- intervalo deve ser maior que 0
-- atraso inicial deve ser maior ou igual a 0
-- se `infiniteClick == false`, `clickCount` deve ser maior que 0
-- se `infiniteClick == true`, `clickCount` deve ser 0
-- tipo de clique obrigatorio
-- botao do mouse obrigatorio
-
-Quando alguma regra falha, o controller mostra os erros no `statusArea` e nao inicia o motor de cliques.
-
-## Pre-requisitos
-
-- Windows
-- JDK 25 instalado
-- `JAVA_HOME` configurado
-- internet para baixar dependencias Maven (primeira execucao)
-
-## Configurando JAVA_HOME (Windows)
-
-Exemplo de caminho de JDK (ajuste conforme sua maquina):
-
-`C:\Program Files\Eclipse Adoptium\jdk-25.0.2.10-hotspot`
-
-PowerShell:
-
-```powershell
-[Environment]::SetEnvironmentVariable("JAVA_HOME", "C:\Program Files\Eclipse Adoptium\jdk-25.0.2.10-hotspot", "User")
+### Linux (Sessão X11 / X.Org recomendada)
+```bash
+./mvnw clean compile
+./mvnw javafx:run
 ```
 
-Abra um novo terminal e valide:
-
-```powershell
-$env:JAVA_HOME
-java -version
-```
-
-## Como executar
-
-No PowerShell, dentro da pasta do projeto:
-
-```powershell
-Set-Location "C:\Users\gusta\OneDrive\Documentos\VISUAL_CODE\AutoClicker"
-$env:JAVA_HOME="C:\Program Files\Eclipse Adoptium\jdk-25.0.2.10-hotspot"
+### Windows (PowerShell / CMD)
+```cmd
 .\mvnw.cmd clean compile
 .\mvnw.cmd javafx:run
 ```
 
-Alternativa: executar `run.bat` na raiz do projeto.
+---
 
-## Como usar a aplicacao
+## 🧪 Testes Automatizados
 
-1. Preencha intervalo, atraso e (se necessario) quantidade
-2. Escolha tipo de clique e botao do mouse
-3. (Opcional) marque `Infinito`
-4. Clique em `Selecionar Tecla de Atalho` e pressione a combinacao
-5. Clique em `Iniciar`
-6. Use `Parar` para interromper
+A suíte conta com **38 testes unitários** automatizados e isolados via simulador virtual em memória (executáveis em ambientes headless ou servidores de integração contínua CI/CD):
 
-## Troubleshooting
-
-### 1) `JAVA_HOME not found in your environment`
-
-Configure `JAVA_HOME` e abra novo terminal antes de rodar Maven.
-
-### 2) `Nao foi possivel localizar nem carregar a classe principal ... Launcher`
-
-Normalmente ocorre quando `target/classes` esta desatualizado.
-
-```powershell
-.\mvnw.cmd clean compile
+```bash
+./mvnw clean test
 ```
 
-### 3) `InvalidModuleDescriptorException: Package ... not found in module`
+> **Resultado:** `Tests run: 38, Failures: 0, Errors: 0, Skipped: 0` — **BUILD SUCCESS**.
 
-Tambem costuma indicar build quebrado/parcial.
+---
 
-```powershell
-.\mvnw.cmd clean
-.\mvnw.cmd compile
-```
+## 🎮 Guia de Uso
 
-### 4) Warnings de `Restricted methods`/`Unsafe`
+### 1. AutoClicker
+1. Acesse a aba **AutoClicker**.
+2. Escolha o botão do mouse (Esquerdo, Direito ou Meio) e o tipo de clique (Simples ou Duplo).
+3. Defina o intervalo em milissegundos (ex.: `10 ms`, `100 ms`).
+4. Selecione se deseja cliques contínuos (infinito) ou uma quantidade fixa.
+5. Inicie com **`▶ Iniciar (F6)`** ou pressione **`F6`** no teclado. Pressione **`F6`** novamente para parar.
 
-Sao avisos comuns com Java mais novo e dependencias JavaFX/Maven internas.
-Nao necessariamente impedem execucao.
-
-### 5) Hotkey nao funciona fora da janela
-
-Comportamento esperado na implementacao atual (hotkey baseada em eventos de foco da UI).
-
-## Melhorias recomendadas
-
-- Hotkey global real (hook nativo por SO)
-- Persistencia de configuracao (JSON/properties)
-- Logs estruturados
-- Testes unitarios para validacoes
-- Tratamento de erros de captura de mouse/teclado com feedback mais detalhado
-
-## Observacoes finais
-
-- O projeto esta preparado para evolucao incremental.
-- O layout pode continuar separado da logica sem impacto no engine.
-- Para evoluir backend, concentre novas regras em `domain`/`service` e mantenha o controller leve.
+### 2. Gravação e Reprodução de Macros
+1. Acesse a aba **Macro**.
+2. Clique em **`Gravar Macro (ESC para parar)`**.
+3. Realize seus cliques, arrastos ou digitações em qualquer janela do computador.
+4. Pressione a tecla **`[ESC]`** para encerrar a gravação.
+5. Clique em **`Salvar Macro...`** para persistir em arquivo JSON com nome e descrição.
+6. Selecione a macro na lista, ajuste o número de repetições e o intervalo entre execuções.
+7. Clique em **`Executar Macro Selecionada`**. Para interromper a qualquer momento, aperte **`[ESC]`**.

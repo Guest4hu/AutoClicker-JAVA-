@@ -1,89 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.*?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.layout.StackPane?>
 
-<StackPane prefHeight="720.0" prefWidth="800.0" style="-fx-background-color: linear-gradient(to bottom, #0f172a, #111827);" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.autoclicker.Controller.AutoClickerController">
-    <VBox alignment="CENTER" maxWidth="560.0" prefWidth="560.0" spacing="12.0">
-        <padding>
-            <Insets bottom="24.0" left="24.0" right="24.0" top="24.0" />
-        </padding>
-
-        <Label style="-fx-text-fill: white; -fx-font-size: 30px; -fx-font-weight: bold;" text="AutoClicker" />
-
-        <VBox spacing="16.0" style="-fx-background-color: rgba(15, 23, 42, 0.92); -fx-background-radius: 18; -fx-border-color: rgba(148, 163, 184, 0.18); -fx-border-radius: 18; -fx-border-width: 1;">
-            <padding>
-                <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
-            </padding>
-
-            <Label style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;" text="Configurações principais" />
-            <Separator />
-
-                <VBox spacing="12.0">
-                    <HBox alignment="CENTER_LEFT" spacing="12.0">
-                        <Label prefWidth="180.0" style="-fx-text-fill: #cbd5e1;" text="Intervalo entre cliques (ms)" />
-                        <TextField fx:id="intervalField" promptText="Ex: 100" HBox.hgrow="ALWAYS" />
-                    </HBox>
-
-                    <HBox alignment="CENTER_LEFT" spacing="12.0">
-                        <Label prefWidth="180.0" style="-fx-text-fill: #cbd5e1;" text="Atraso inicial (ms)" />
-                        <TextField fx:id="delayField" promptText="Ex: 500" HBox.hgrow="ALWAYS" />
-                    </HBox>
-
-                    <HBox alignment="CENTER_LEFT" spacing="12.0">
-                        <Label prefWidth="180.0" style="-fx-text-fill: #cbd5e1;" text="Quantidade de cliques" />
-                        <TextField fx:id="clickCountField" promptText="Ex: 200" HBox.hgrow="ALWAYS" />
-                        <CheckBox fx:id="infiniteClicksCheck" onAction="#disableInfiniteClick" style="-fx-text-fill: #cbd5e1;" text="Infinito" />
-                    </HBox>
-
-                    <HBox alignment="CENTER_LEFT" spacing="12.0">
-                        <Label prefWidth="180.0" style="-fx-text-fill: #cbd5e1;" text="Tipo de clique" />
-                        <ComboBox fx:id="clickTypeCombo" promptText="Selecione" HBox.hgrow="ALWAYS" />
-                    </HBox>
-
-                    <HBox alignment="CENTER_LEFT" spacing="12.0">
-                        <Label prefWidth="180.0" style="-fx-text-fill: #cbd5e1;" text="Botão do mouse" />
-                        <ComboBox fx:id="mouseButtonCombo" promptText="Selecione" HBox.hgrow="ALWAYS" />
-                    </HBox>
-
-                    <HBox alignment="CENTER_LEFT" spacing="12.0">
-                        <Label prefWidth="180.0" style="-fx-text-fill: #cbd5e1;" text="Tecla de atalho" />
-                        <Button fx:id="hotKeyButton" onAction="#selectHotKeyButton" text="Selecionar Tecla de Atalho" HBox.hgrow="ALWAYS" />
-                    </HBox>
-                </VBox>
-
-            <HBox alignment="CENTER_RIGHT" spacing="10.0">
-                <Button fx:id="startButton" defaultButton="true" onAction="#buttonStopAndStart" style="-fx-background-color: #00ff00; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10;" text="Iniciar" />
-            </HBox>
-             <Label style="-fx-text-fill: #cbd5e1; -fx-font-weight: bold;" text="Notas / Status visual" />
-             <TextArea fx:id="statusArea" editable="false" promptText="Espaço para mensagens, logs curtos ou instruções do usuário." wrapText="true" VBox.vgrow="ALWAYS" />
-        </VBox>
-
-<!--            <VBox prefWidth="480.0" spacing="16.0" style="-fx-background-color: rgba(15, 23, 42, 0.92); -fx-background-radius: 18; -fx-border-color: rgba(148, 163, 184, 0.18); -fx-border-radius: 18; -fx-border-width: 1;">-->
-<!--                <padding>-->
-<!--                    <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />-->
-<!--                </padding>-->
-
-<!--                <Label style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;" text="Pontos e monitoramento" />-->
-<!--                <Separator />-->
-
-<!--                <VBox spacing="8.0">-->
-<!--                    <Label style="-fx-text-fill: #cbd5e1; -fx-font-weight: bold;" text="Pontos de clique" />-->
-<!--                    <ListView fx:id="pointsList" prefHeight="220.0" />-->
-<!--                </VBox>-->
-
-<!--                <HBox spacing="10.0">-->
-<!--                    <Button fx:id="addPointButton" maxWidth="1.7976931348623157E308" style="-fx-background-color: #2563eb; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10;" text="Adicionar ponto" HBox.hgrow="ALWAYS" />-->
-<!--                    <Button fx:id="removePointButton" maxWidth="1.7976931348623157E308" style="-fx-background-color: #334155; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10;" text="Remover" HBox.hgrow="ALWAYS" />-->
-<!--                </HBox>-->
-
-<!--                <HBox spacing="10.0">-->
-<!--                    <Button fx:id="captureButton" maxWidth="1.7976931348623157E308" style="-fx-background-color: #7c3aed; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10;" text="Capturar posição" HBox.hgrow="ALWAYS" />-->
-<!--                    <Button fx:id="clearButton" maxWidth="1.7976931348623157E308" style="-fx-background-color: #475569; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10;" text="Limpar tudo" HBox.hgrow="ALWAYS" />-->
-<!--                </HBox>-->
-
-<!--                <VBox spacing="8.0" VBox.vgrow="ALWAYS" />-->
-<!--            </VBox>-->
-    </VBox>
+<StackPane stylesheets="@styles.css" styleClass="app-container" prefWidth="560.0" prefHeight="730.0"
+           xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.example.autoclicker.ui.controller.MainController">
+    <TabPane tabClosingPolicy="UNAVAILABLE" styleClass="app-tabs">
+        <Tab text="AutoClicker">
+            <fx:include fx:id="autoClickerTab" source="auto-clicker-tab.fxml" />
+        </Tab>
+        <Tab text="Macro">
+            <fx:include fx:id="macroTab" source="macro-tab.fxml" />
+        </Tab>
+    </TabPane>
 </StackPane>

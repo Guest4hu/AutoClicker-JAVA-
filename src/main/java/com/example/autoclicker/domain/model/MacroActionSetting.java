@@ -1,0 +1,156 @@
+package com.example.autoclicker.domain.model;
+
+import com.example.autoclicker.input.hotkey.HotkeyService;
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+/**
+ * Representa um evento atômico de entrada gravado em uma macro (tecla ou ação de mouse).
+ * Segue a convenção canônica JavaBean para compatibilidade com Jackson.
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class MacroActionSetting {
+
+    private ActionType actionType;
+    private Integer key;
+    private long keyPressed;
+    private long keyReleased;
+
+    @JsonProperty("yBefore")
+    @JsonAlias({"ybefore", "yBefore"})
+    private int yBefore;
+
+    @JsonProperty("xBefore")
+    @JsonAlias({"xbefore", "xBefore"})
+    private int xBefore;
+
+    @JsonProperty("yAfter")
+    @JsonAlias({"yafter", "yAfter"})
+    private int yAfter;
+
+    @JsonProperty("xAfter")
+    @JsonAlias({"xafter", "xAfter"})
+    private int xAfter;
+
+    public MacroActionSetting() {
+    }
+
+    public MacroActionSetting(ActionType actionType, Integer key, long milliseconds) {
+        this.actionType = actionType;
+        this.key = key;
+        this.keyPressed = milliseconds;
+    }
+
+    public MacroActionSetting(ActionType actionType, Integer key, long milliseconds, int y, int x) {
+        this.actionType = actionType;
+        this.key = key;
+        this.keyPressed = milliseconds;
+        this.yBefore = y;
+        this.xBefore = x;
+        this.yAfter = y;
+        this.xAfter = x;
+    }
+
+    public ActionType getActionType() {
+        return actionType;
+    }
+
+    public void setActionType(ActionType actionType) {
+        this.actionType = actionType;
+    }
+
+    public Integer getKey() {
+        return key;
+    }
+
+    public void setKey(Integer key) {
+        this.key = key;
+    }
+
+    public long getKeyPressed() {
+        return keyPressed;
+    }
+
+    public void setKeyPressed(long keyPressed) {
+        this.keyPressed = keyPressed;
+    }
+
+    public long getKeyReleased() {
+        return keyReleased;
+    }
+
+    public void setKeyReleased(long keyReleased) {
+        this.keyReleased = keyReleased;
+    }
+
+    // --- Coordenadas Iniciais ---
+
+    @JsonProperty("yBefore")
+    public int getYBefore() {
+        return yBefore;
+    }
+
+    public void setYBefore(int yBefore) {
+        this.yBefore = yBefore;
+    }
+
+    @JsonProperty("xBefore")
+    public int getXBefore() {
+        return xBefore;
+    }
+
+    public void setXBefore(int xBefore) {
+        this.xBefore = xBefore;
+    }
+
+    // --- Coordenadas Finais ---
+
+    @JsonProperty("yAfter")
+    public int getYAfter() {
+        return yAfter;
+    }
+
+    public void setYAfter(int yAfter) {
+        this.yAfter = yAfter;
+    }
+
+    @JsonProperty("xAfter")
+    public int getXAfter() {
+        return xAfter;
+    }
+
+    public void setXAfter(int xAfter) {
+        this.xAfter = xAfter;
+    }
+
+    @Override
+    public String toString() {
+        long duracao = (keyReleased > keyPressed) ? (keyReleased - keyPressed) : 0;
+        double inicioSegundos = keyPressed / 1000.0;
+
+        if (actionType == ActionType.TECLADO) {
+            String nomeTecla = (key != null) ? HotkeyService.formatKeyText(key) : "Desconhecida";
+            return String.format("[+%6.3fs] TECLADO  | Tecla: %-12s | Duração: %4d ms", inicioSegundos, "[" + nomeTecla + "]", duracao);
+        }
+
+        if (actionType == ActionType.MOUSE || actionType == ActionType.MOUSE_ARRASTADO) {
+            String botao = switch (key != null ? key : 0) {
+                case 1 -> "Esquerdo";
+                case 2 -> "Direito";
+                case 3 -> "Meio/Scroll";
+                default -> "Botão " + key;
+            };
+
+            boolean isDrag = (actionType == ActionType.MOUSE_ARRASTADO || xBefore != xAfter || yBefore != yAfter);
+            if (isDrag) {
+                return String.format("[+%6.3fs] ARRASTAR | %-12s de (%4d, %4d) até (%4d, %4d) | Duração: %4d ms",
+                        inicioSegundos, botao, xBefore, yBefore, xAfter, yAfter, duracao);
+            }
+
+            return String.format("[+%6.3fs] MOUSE    | %-12s em (%4d, %4d) | Duração: %4d ms", inicioSegundos, botao, xBefore, yBefore, duracao);
+        }
+
+        return String.format("[+%6.3fs] AÇÃO     | Posição: (%4d, %4d)", inicioSegundos, xBefore, yBefore);
+    }
+}
