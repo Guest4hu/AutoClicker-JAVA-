@@ -5,6 +5,7 @@ import com.example.autoclicker.DTO.MacroSettingDTO;
 import com.example.autoclicker.config.NativeKeyConfig;
 import com.example.autoclicker.enums.ActionType;
 
+import com.example.autoclicker.input.simulator.InputSimulator;
 import java.awt.event.KeyEvent;
 import java.util.function.IntConsumer;
 
@@ -18,8 +19,20 @@ public class MacroEngine extends AbstractEngine {
     private int lastPressedMouseMask = 0;
     private int lastPressedAwtKey = 0;
 
+    public MacroEngine() {
+        super();
+    }
+
+    public MacroEngine(InputSimulator inputSimulator) {
+        super(inputSimulator);
+    }
+
     public static MacroEngine getInstance() {
         return INSTANCE;
+    }
+
+    public static void setSimulator(InputSimulator simulator) {
+        INSTANCE.setInputSimulator(simulator);
     }
 
     // --- Métodos Estáticos (Fachada para facilidade de uso) ---
@@ -125,10 +138,10 @@ public class MacroEngine extends AbstractEngine {
     }
 
     private void pressMouse(MacroActionSetting actionSetting) {
-        int x1 = actionSetting.getxBefore();
-        int y1 = actionSetting.getyBefore();
-        int x2 = actionSetting.getxAfter();
-        int y2 = actionSetting.getyAfter();
+        int x1 = actionSetting.getXBefore();
+        int y1 = actionSetting.getYBefore();
+        int x2 = actionSetting.getXAfter();
+        int y2 = actionSetting.getYAfter();
         int buttonMask = translateMouseButton(actionSetting.getKey() != null ? actionSetting.getKey() : 1);
 
         long duracaoMillis = actionSetting.getKeyReleased() - actionSetting.getKeyPressed();
@@ -136,8 +149,8 @@ public class MacroEngine extends AbstractEngine {
             duracaoMillis = 15;
         }
 
-        robot.mouseMove(x1, y1);
-        robot.mousePress(buttonMask);
+        inputSimulator.mouseMove(x1, y1);
+        inputSimulator.mousePress(buttonMask);
         lastPressedMouseMask = buttonMask;
 
         boolean isDrag = (x1 != x2 || y1 != y2);
@@ -154,7 +167,7 @@ public class MacroEngine extends AbstractEngine {
                 int curX = (int) Math.round(x1 + (x2 - x1) * progresso);
                 int curY = (int) Math.round(y1 + (y2 - y1) * progresso);
 
-                robot.mouseMove(curX, curY);
+                inputSimulator.mouseMove(curX, curY);
                 if (!sleepMillis(stepTimeMs)) {
                     break;
                 }
@@ -163,9 +176,9 @@ public class MacroEngine extends AbstractEngine {
             sleepMillis(duracaoMillis);
         }
 
-        robot.mouseMove(x2, y2);
+        inputSimulator.mouseMove(x2, y2);
         try {
-            robot.mouseRelease(buttonMask);
+            inputSimulator.mouseRelease(buttonMask);
         } catch (Exception ignored) {
         }
         lastPressedMouseMask = 0;
@@ -187,12 +200,12 @@ public class MacroEngine extends AbstractEngine {
         }
 
         try {
-            robot.keyPress(awtKey);
+            inputSimulator.keyPress(awtKey);
             lastPressedAwtKey = awtKey;
             sleepMillis(duracaoMillis);
         } finally {
             try {
-                robot.keyRelease(awtKey);
+                inputSimulator.keyRelease(awtKey);
             } catch (Exception ignored) {
             }
             lastPressedAwtKey = 0;
@@ -203,7 +216,7 @@ public class MacroEngine extends AbstractEngine {
     protected void cleanUp() {
         if (lastPressedMouseMask != 0) {
             try {
-                robot.mouseRelease(lastPressedMouseMask);
+                inputSimulator.mouseRelease(lastPressedMouseMask);
             } catch (Exception ignored) {
             }
             lastPressedMouseMask = 0;
@@ -211,7 +224,7 @@ public class MacroEngine extends AbstractEngine {
 
         if (lastPressedAwtKey != 0) {
             try {
-                robot.keyRelease(lastPressedAwtKey);
+                inputSimulator.keyRelease(lastPressedAwtKey);
             } catch (Exception ignored) {
             }
             lastPressedAwtKey = 0;

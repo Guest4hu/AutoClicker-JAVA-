@@ -16,4 +16,5 @@ module com.example.autoclicker {
     exports com.example.autoclicker.domain;
     exports com.example.autoclicker.DTO;
     exports com.example.autoclicker.enums;
+    exports com.example.autoclicker.input.simulator;
 }

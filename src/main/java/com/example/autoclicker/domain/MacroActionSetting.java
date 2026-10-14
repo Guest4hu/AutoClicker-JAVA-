@@ -66,32 +66,16 @@ public class MacroActionSetting {
 
     // --- Coordenadas Iniciais ---
 
-    public int getyBefore() {
-        return yBefore;
-    }
-
     public int getYBefore() {
         return yBefore;
-    }
-
-    public void setyBefore(int yBefore) {
-        this.yBefore = yBefore;
     }
 
     public void setYBefore(int yBefore) {
         this.yBefore = yBefore;
     }
 
-    public int getxBefore() {
-        return xBefore;
-    }
-
     public int getXBefore() {
         return xBefore;
-    }
-
-    public void setxBefore(int xBefore) {
-        this.xBefore = xBefore;
     }
 
     public void setXBefore(int xBefore) {
@@ -100,32 +84,16 @@ public class MacroActionSetting {
 
     // --- Coordenadas Finais ---
 
-    public int getyAfter() {
-        return yAfter;
-    }
-
     public int getYAfter() {
         return yAfter;
-    }
-
-    public void setyAfter(int yAfter) {
-        this.yAfter = yAfter;
     }
 
     public void setYAfter(int yAfter) {
         this.yAfter = yAfter;
     }
 
-    public int getxAfter() {
-        return xAfter;
-    }
-
     public int getXAfter() {
         return xAfter;
-    }
-
-    public void setxAfter(int xAfter) {
-        this.xAfter = xAfter;
     }
 
     public void setXAfter(int xAfter) {
@@ -138,7 +106,7 @@ public class MacroActionSetting {
         double inicioSegundos = keyPressed / 1000.0;
 
         if (actionType == ActionType.TECLADO) {
-            String nomeTecla = (key != null) ? NativeKeyEvent.getKeyText(key) : "Desconhecida";
+            String nomeTecla = (key != null) ? com.example.autoclicker.service.HotkeyService.formatKeyText(key) : "Desconhecida";
             return String.format("[+%6.3fs] TECLADO  | Tecla: %-12s | Duração: %4d ms", inicioSegundos, "[" + nomeTecla + "]", duracao);
         }
 

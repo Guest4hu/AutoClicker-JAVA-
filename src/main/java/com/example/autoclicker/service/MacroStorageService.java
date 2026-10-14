@@ -12,11 +12,17 @@ import java.util.List;
 
 public class MacroStorageService {
     private final ObjectMapper objectMapper = JacksonConfig.getObjectMapper();
-    private static final Path MACRO_DIR = Path.of("storage", "macros");
+    private static final Path DEFAULT_MACRO_DIR = Path.of("storage", "macros");
+    private final Path macroDir;
 
     public MacroStorageService() {
+        this(DEFAULT_MACRO_DIR);
+    }
+
+    public MacroStorageService(Path macroDir) {
+        this.macroDir = macroDir != null ? macroDir : DEFAULT_MACRO_DIR;
         try {
-            Files.createDirectories(MACRO_DIR);
+            Files.createDirectories(this.macroDir);
         } catch (IOException e) {
             throw new RuntimeException("Erro ao criar pasta para salvar os macros", e);
         }
@@ -28,27 +34,24 @@ public class MacroStorageService {
         if (existeTalArquivo(nomeArquivo)) {
             throw new FileSystemException("Já existe arquivo com este nome");
         }
-        Path arquivoDestino = MACRO_DIR.resolve(nomeArquivo);
+        Path arquivoDestino = macroDir.resolve(nomeArquivo);
         objectMapper.writeValue(arquivoDestino.toFile(), settingDTO);
     }
 
     public MacroSettingDTO load(String nomeArquivo) throws IOException {
         String arquivoFinal = nomeArquivo.endsWith(".json") ? nomeArquivo : nomeArquivo + ".json";
-        Path caminhoDestino = MACRO_DIR.resolve(arquivoFinal);
+        Path caminhoDestino = macroDir.resolve(arquivoFinal);
         return objectMapper.readValue(caminhoDestino.toFile(), MacroSettingDTO.class);
     }
 
     public boolean existeTalArquivo(String nomeArquivo) {
         String arquivoFinal = nomeArquivo.endsWith(".json") ? nomeArquivo : nomeArquivo + ".json";
-        return Files.exists(MACRO_DIR.resolve(arquivoFinal));
+        return Files.exists(macroDir.resolve(arquivoFinal));
     }
 
-    public List<String> listAllSetings() throws IOException {
-        return listAllSettings();
-    }
 
     public List<String> listAllSettings() throws IOException {
-        try (var stream = Files.list(MACRO_DIR)) {
+        try (var stream = Files.list(this.macroDir)) {
             return stream
                     .filter(path -> path.toString().endsWith(".json"))
                     .map(path -> path.getFileName().toString().replace(".json", ""))

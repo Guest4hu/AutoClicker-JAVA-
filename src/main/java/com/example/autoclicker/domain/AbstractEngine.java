@@ -1,7 +1,10 @@
 package com.example.autoclicker.domain;
 
-import java.awt.AWTException;
-import java.awt.Robot;
+import com.example.autoclicker.input.simulator.AwtRobotInputSimulator;
+import com.example.autoclicker.input.simulator.InputSimulator;
+import com.example.autoclicker.input.simulator.VirtualInputSimulator;
+
+import java.awt.GraphicsEnvironment;
 import java.awt.event.InputEvent;
 
 /**
@@ -11,18 +14,36 @@ import java.awt.event.InputEvent;
  */
 public abstract class AbstractEngine {
 
-    protected static Robot robot;
+    protected InputSimulator inputSimulator;
     protected volatile boolean running;
     protected Thread workerThread;
     protected Runnable finishListener;
 
-    static {
+    public AbstractEngine() {
+        this(createDefaultSimulator());
+    }
+
+    public AbstractEngine(InputSimulator inputSimulator) {
+        this.inputSimulator = inputSimulator != null ? inputSimulator : createDefaultSimulator();
+    }
+
+    public static InputSimulator createDefaultSimulator() {
         try {
-            robot = new Robot();
-        } catch (Throwable ignored) {
-            // Em testes ou ambientes headless, fallback para permitir carregamento das classes
-            robot = null;
+            if (GraphicsEnvironment.isHeadless()) {
+                return new VirtualInputSimulator();
+            }
+            return new AwtRobotInputSimulator();
+        } catch (Throwable t) {
+            return new VirtualInputSimulator();
         }
+    }
+
+    public InputSimulator getInputSimulator() {
+        return inputSimulator;
+    }
+
+    public void setInputSimulator(InputSimulator inputSimulator) {
+        this.inputSimulator = inputSimulator;
     }
 
     public void setFinishListener(Runnable listener) {
@@ -43,12 +64,8 @@ public abstract class AbstractEngine {
             return;
         }
 
-        if (robot == null) {
-            try {
-                robot = new Robot();
-            } catch (AWTException e) {
-                throw new IllegalStateException("Falha ao inicializar o Robot do AWT: " + e.getMessage(), e);
-            }
+        if (inputSimulator == null) {
+            inputSimulator = createDefaultSimulator();
         }
 
         running = true;

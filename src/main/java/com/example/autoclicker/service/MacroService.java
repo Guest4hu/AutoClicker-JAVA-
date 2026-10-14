@@ -9,12 +9,17 @@ import com.github.kwhat.jnativehook.mouse.NativeMouseEvent;
 import com.github.kwhat.jnativehook.mouse.NativeMouseListener;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class MacroService {
 
-    private List<MacroActionSetting> macroActions = new ArrayList<>();
+    private static final Logger LOGGER = Logger.getLogger(MacroService.class.getName());
+
+    private final List<MacroActionSetting> macroActions = Collections.synchronizedList(new ArrayList<>());
     private NativeKeyListener currentKeyListener;
     private NativeMouseListener currentMouseListener;
     private volatile boolean capturing = false;
@@ -26,7 +31,7 @@ public class MacroService {
         macroActions.clear();
         capturing = true;
         final long currentTimeMilli = System.currentTimeMillis();
-        final List<MacroActionSetting> macroActionsTemp = new ArrayList<>();
+        final List<MacroActionSetting> macroActionsTemp = Collections.synchronizedList(new ArrayList<>());
 
         NativeKeyListener keyListener = new NativeKeyListener() {
             @Override
@@ -35,13 +40,15 @@ public class MacroService {
                 if (e.getKeyCode() == NativeKeyEvent.VC_ESCAPE) {
                     long now = System.currentTimeMillis() - currentTimeMilli;
                     // Fecha qualquer ação que tenha ficado sem release
-                    for (MacroActionSetting a : macroActionsTemp) {
-                        if (a.getKeyReleased() <= 0) {
-                            a.setKeyReleased(now);
+                    synchronized (macroActionsTemp) {
+                        for (MacroActionSetting a : macroActionsTemp) {
+                            if (a.getKeyReleased() <= 0) {
+                                a.setKeyReleased(now);
+                            }
                         }
+                        macroActions.clear();
+                        macroActions.addAll(macroActionsTemp);
                     }
-
-                    macroActions = new ArrayList<>(macroActionsTemp);
                     stopCapture();
 
                     if (onFinished != null) {
@@ -63,13 +70,15 @@ public class MacroService {
             public void nativeKeyReleased(NativeKeyEvent e) {
                 long now = System.currentTimeMillis() - currentTimeMilli;
                 // Procura de trás para frente a ação de teclado correspondente que ainda não foi solta
-                for (int i = macroActionsTemp.size() - 1; i >= 0; i--) {
-                    MacroActionSetting a = macroActionsTemp.get(i);
-                    if (a.getActionType() == ActionType.TECLADO
-                            && Objects.equals(a.getKey(), e.getKeyCode())
-                            && a.getKeyReleased() <= 0) {
-                        a.setKeyReleased(now);
-                        break;
+                synchronized (macroActionsTemp) {
+                    for (int i = macroActionsTemp.size() - 1; i >= 0; i--) {
+                        MacroActionSetting a = macroActionsTemp.get(i);
+                        if (a.getActionType() == ActionType.TECLADO
+                                && Objects.equals(a.getKey(), e.getKeyCode())
+                                && a.getKeyReleased() <= 0) {
+                            a.setKeyReleased(now);
+                            break;
+                        }
                     }
                 }
             }
@@ -78,7 +87,6 @@ public class MacroService {
         NativeMouseListener mouseListener = new NativeMouseListener() {
             @Override
             public void nativeMousePressed(NativeMouseEvent nativeEvent) {
-                System.out.println(">>> MOUSE PRESSIONADO: " + nativeEvent.getButton());
                 macroActionsTemp.add(new MacroActionSetting(
                         ActionType.MOUSE,
                         nativeEvent.getButton(),
@@ -92,15 +100,17 @@ public class MacroService {
             public void nativeMouseReleased(NativeMouseEvent nativeEvent) {
                 long now = System.currentTimeMillis() - currentTimeMilli;
                 // Procura de trás para frente a ação de mouse correspondente ao botão solto
-                for (int i = macroActionsTemp.size() - 1; i >= 0; i--) {
-                    MacroActionSetting a = macroActionsTemp.get(i);
-                    if (a.getActionType() == ActionType.MOUSE
-                            && Objects.equals(a.getKey(), nativeEvent.getButton())
-                            && a.getKeyReleased() <= 0) {
-                        a.setKeyReleased(now);
-                        a.setYAfter(nativeEvent.getY());
-                        a.setXAfter(nativeEvent.getX());
-                        break;
+                synchronized (macroActionsTemp) {
+                    for (int i = macroActionsTemp.size() - 1; i >= 0; i--) {
+                        MacroActionSetting a = macroActionsTemp.get(i);
+                        if (a.getActionType() == ActionType.MOUSE
+                                && Objects.equals(a.getKey(), nativeEvent.getButton())
+                                && a.getKeyReleased() <= 0) {
+                            a.setKeyReleased(now);
+                            a.setYAfter(nativeEvent.getY());
+                            a.setXAfter(nativeEvent.getX());
+                            break;
+                        }
                     }
                 }
             }
@@ -117,13 +127,17 @@ public class MacroService {
         if (currentKeyListener != null) {
             try {
                 GlobalScreen.removeNativeKeyListener(currentKeyListener);
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                LOGGER.log(Level.FINE, "Erro ao desregistrar listener de teclado nativo", e);
+            }
             currentKeyListener = null;
         }
         if (currentMouseListener != null) {
             try {
                 GlobalScreen.removeNativeMouseListener(currentMouseListener);
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                LOGGER.log(Level.FINE, "Erro ao desregistrar listener de mouse nativo", e);
+            }
             currentMouseListener = null;
         }
     }
@@ -133,11 +147,18 @@ public class MacroService {
     }
 
     public List<MacroActionSetting> getMacroActions() {
-        return macroActions;
+        synchronized (macroActions) {
+            return new ArrayList<>(macroActions);
+        }
     }
 
     public void setMacroActions(List<MacroActionSetting> macroActions) {
-        this.macroActions = macroActions;
+        synchronized (this.macroActions) {
+            this.macroActions.clear();
+            if (macroActions != null) {
+                this.macroActions.addAll(macroActions);
+            }
+        }
     }
 
     @Override

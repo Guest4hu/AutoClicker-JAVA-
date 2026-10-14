@@ -1,18 +1,35 @@
 package com.example.autoclicker.domain;
 
+import com.example.autoclicker.input.simulator.InputSimulator;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class AutoClickerEngine extends AbstractEngine {
 
+    private static final Logger LOGGER = Logger.getLogger(AutoClickerEngine.class.getName());
     private static final AutoClickerEngine INSTANCE = new AutoClickerEngine();
 
     private static AutoClickerSetting setting;
     private static Consumer<Integer> progressListener;
     private static final AtomicInteger totalClicksCounter = new AtomicInteger(0);
+    private volatile boolean isMousePressed = false;
+
+    public AutoClickerEngine() {
+        super();
+    }
+
+    public AutoClickerEngine(InputSimulator inputSimulator) {
+        super(inputSimulator);
+    }
 
     public static AutoClickerEngine getInstance() {
         return INSTANCE;
+    }
+
+    public static void setSimulator(InputSimulator simulator) {
+        INSTANCE.setInputSimulator(simulator);
     }
 
     // --- Métodos Estáticos (Fachada para compatibilidade com o Controller) ---
@@ -70,11 +87,7 @@ public class AutoClickerEngine extends AbstractEngine {
             return;
         }
 
-        if (setting.isInfiniteClick()) {
-            autoClickerInfinite();
-        } else {
-            autoClickerCounts();
-        }
+        runClickLoop();
     }
 
     @Override
@@ -84,43 +97,24 @@ public class AutoClickerEngine extends AbstractEngine {
 
     // --- Lógica Interna de Automação ---
 
-    private void autoClickerInfinite() {
-        long intervalNanos = (long) setting.getInterval() * 1_000_000L;
-        long targetTimeNanos = System.nanoTime();
-
-        while (running) {
-            clickOnce();
-            if (!running) {
-                return;
-            }
-
-            targetTimeNanos += intervalNanos;
-            long now = System.nanoTime();
-
-            // Proteção contra lag spike: se atrasou mais de 1 ciclo, reseta o alvo
-            if (targetTimeNanos < now - intervalNanos) {
-                targetTimeNanos = now;
-            }
-
-            if (!sleepUntil(targetTimeNanos)) {
-                return;
-            }
-        }
-    }
-
-    private void autoClickerCounts() {
+    private void runClickLoop() {
+        boolean infinite = setting.isInfiniteClick();
         int remainingClicks = setting.getClickCount();
         long intervalNanos = (long) setting.getInterval() * 1_000_000L;
         long targetTimeNanos = System.nanoTime();
 
-        while (running && remainingClicks > 0) {
+        while (running && (infinite || remainingClicks > 0)) {
             clickOnce();
-            remainingClicks--;
+            if (!infinite) {
+                remainingClicks--;
+            }
 
-            if (remainingClicks > 0 && running) {
+            boolean hasNext = running && (infinite || remainingClicks > 0);
+            if (hasNext) {
                 targetTimeNanos += intervalNanos;
                 long now = System.nanoTime();
 
+                // Proteção contra lag spike: se atrasou mais de 1 ciclo, reseta o alvo
                 if (targetTimeNanos < now - intervalNanos) {
                     targetTimeNanos = now;
                 }
@@ -133,8 +127,8 @@ public class AutoClickerEngine extends AbstractEngine {
     }
 
     private void clickOnce() {
-        int totalClicks = setting.getClickType().getLabel();
-        int mouseMask = setting.getMouseButton().getLabel();
+        int totalClicks = setting.getClickType().getClickMultiplier();
+        int mouseMask = setting.getMouseButton().getMask();
 
         // 5 milissegundos em nanossegundos (padrão ideal para jogos registrarem o clique)
         long defaultHoldNanos = 5_000_000L;
@@ -144,9 +138,11 @@ public class AutoClickerEngine extends AbstractEngine {
         long holdNanos = Math.min(defaultHoldNanos, maxHoldNanos);
 
         for (int i = 0; i < totalClicks && running; i++) {
-            robot.mousePress(mouseMask);
+            inputSimulator.mousePress(mouseMask);
+            isMousePressed = true;
             sleepUntil(System.nanoTime() + holdNanos);
-            robot.mouseRelease(mouseMask);
+            inputSimulator.mouseRelease(mouseMask);
+            isMousePressed = false;
 
             // Se for clique duplo, dá uma pequena folga antes do segundo clique
             if (i < totalClicks - 1 && running) {
@@ -160,11 +156,14 @@ public class AutoClickerEngine extends AbstractEngine {
         }
     }
 
-    private static void releaseMouseSafely() {
-        if (setting != null && robot != null && setting.getMouseButton() != null) {
+    private void releaseMouseSafely() {
+        if (isMousePressed && setting != null && inputSimulator != null && setting.getMouseButton() != null) {
             try {
-                robot.mouseRelease(setting.getMouseButton().getLabel());
-            } catch (Exception ignored) {
+                inputSimulator.mouseRelease(setting.getMouseButton().getMask());
+            } catch (Exception e) {
+                LOGGER.log(Level.FINE, "Erro ao liberar mouse durante limpeza", e);
+            } finally {
+                isMousePressed = false;
             }
         }
     }

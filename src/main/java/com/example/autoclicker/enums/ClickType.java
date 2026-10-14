@@ -4,16 +4,21 @@ public enum ClickType {
     SIMPLES(1, "Clique Simples"),
     DUPLO(2, "Clique Duplo");
 
-    private final int label;
+    private final int clickMultiplier;
     private final String displayName;
 
-    ClickType(int label, String displayName) {
-        this.label = label;
+    ClickType(int clickMultiplier, String displayName) {
+        this.clickMultiplier = clickMultiplier;
         this.displayName = displayName;
     }
 
+    public int getClickMultiplier() {
+        return clickMultiplier;
+    }
+
+    @Deprecated
     public int getLabel() {
-        return label;
+        return getClickMultiplier();
     }
 
     public String getDisplayName() {

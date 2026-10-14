@@ -7,16 +7,21 @@ public enum MouseButton {
     DIREITO(InputEvent.BUTTON3_DOWN_MASK, "Botão Direito (Secundário)"),
     MEIO(InputEvent.BUTTON2_DOWN_MASK, "Botão do Meio (Scroll)");
 
-    private final int label;
+    private final int mask;
     private final String displayName;
 
-    MouseButton(int label, String displayName) {
-        this.label = label;
+    MouseButton(int mask, String displayName) {
+        this.mask = mask;
         this.displayName = displayName;
     }
 
+    public int getMask() {
+        return mask;
+    }
+
+    @Deprecated
     public int getLabel() {
-        return label;
+        return getMask();
     }
 
     public String getDisplayName() {

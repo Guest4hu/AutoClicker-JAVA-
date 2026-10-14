@@ -32,6 +32,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.UnaryOperator;
 
 public class AutoClickerController {
@@ -521,37 +522,50 @@ public class AutoClickerController {
         }
 
         dialogService.showMacroDialog().ifPresent(data -> {
-            try {
-                MacroSettingDTO setting = new MacroSettingDTO(
-                        data.name(),
-                        data.description(),
-                        LocalDateTime.now(),
-                        macroService.getMacroActions()
-                );
+            CompletableFuture.runAsync(() -> {
+                try {
+                    MacroSettingDTO setting = new MacroSettingDTO(
+                            data.name(),
+                            data.description(),
+                            LocalDateTime.now(),
+                            macroService.getMacroActions()
+                    );
 
-                macroStorageService.save(setting);
-                macroLog("Macro '" + data.name() + "' salva com sucesso!");
-
-            } catch (Exception e) {
-                macroLog("Erro ao salvar macro: " + e.getMessage());
-            }
+                    macroStorageService.save(setting);
+                    Platform.runLater(() -> {
+                        macroLog("Macro '" + data.name() + "' salva com sucesso!");
+                        refreshMacroList();
+                    });
+                } catch (Exception e) {
+                    Platform.runLater(() -> macroLog("Erro ao salvar macro: " + e.getMessage()));
+                }
+            });
         });
-        refreshMacroList();
     }
 
     @FXML
     public void refreshMacroList() {
-        try {
-            List<String> macros = macroStorageService.listAllSettings();
-            macroListView.getItems().setAll(macros);
-        } catch (IOException e) {
-            macroLog("Erro ao listar macros: " + e.getMessage());
-        }
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                return macroStorageService.listAllSettings();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }).thenAccept(macros -> Platform.runLater(() -> macroListView.getItems().setAll(macros)))
+          .exceptionally(ex -> {
+              Platform.runLater(() -> macroLog("Erro ao listar macros: " + (ex.getCause() != null ? ex.getCause().getMessage() : ex.getMessage())));
+              return null;
+          });
     }
 
     private void carregarDetalhesMacro(String macroName) {
-        try {
-            MacroSettingDTO macro = macroStorageService.load(macroName);
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                return macroStorageService.load(macroName);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }).thenAccept(macro -> Platform.runLater(() -> {
             macroStatusAreas.clear();
             macroLog("--- Macro: " + macro.name() + " ---");
             if (macro.description() != null && !macro.description().isBlank()) {
@@ -561,9 +575,10 @@ public class AutoClickerController {
             macroLog("Ações gravadas (" + macro.configs().size() + "):");
 
             macro.configs().forEach(action -> macroLog(action.toString()));
-        } catch (IOException e) {
-            macroLog("Erro ao carregar macro: " + e.getMessage());
-        }
+        })).exceptionally(ex -> {
+            Platform.runLater(() -> macroLog("Erro ao carregar macro: " + (ex.getCause() != null ? ex.getCause().getMessage() : ex.getMessage())));
+            return null;
+        });
     }
 
     @FXML
@@ -599,7 +614,7 @@ public class AutoClickerController {
                     }
                 });
             });
-            MacroEngine.startMacro(macro);
+            MacroEngine.startMacro(macro, playback);
 
         } catch (Exception e) {
             macroLog("Erro ao executar macro: " + e.getMessage());
@@ -643,14 +658,19 @@ public class AutoClickerController {
     @FXML
     public void refreshOpenWindows() {
         macroLog("Buscando janelas abertas...");
-        List<WindowInfoDTO> windows = windowService.getOpenWindows();
-        targetWindowCombo.getItems().setAll(windows);
-        if (!windows.isEmpty()) {
-            targetWindowCombo.getSelectionModel().selectFirst();
-            macroLog(windows.size() + " janela(s) encontrada(s).");
-        } else {
-            macroLog("Nenhuma janela encontrada.");
-        }
+        CompletableFuture.supplyAsync(windowService::getOpenWindows)
+                .thenAccept(windows -> Platform.runLater(() -> {
+                    targetWindowCombo.getItems().setAll(windows);
+                    if (!windows.isEmpty()) {
+                        targetWindowCombo.getSelectionModel().selectFirst();
+                        macroLog(windows.size() + " janela(s) encontrada(s).");
+                    } else {
+                        macroLog("Nenhuma janela encontrada.");
+                    }
+                })).exceptionally(ex -> {
+                    Platform.runLater(() -> macroLog("Erro ao listar janelas: " + (ex.getCause() != null ? ex.getCause().getMessage() : ex.getMessage())));
+                    return null;
+                });
     }
 
     private MacroPlaybackSettingDTO criarMacroPlaybackSetting() {
